@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETHERLEGIONS</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Ethers.js -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.0/dist/ethers.umd.min.js"></script>
+  <!-- WalletConnect Provider -->
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  <!-- Web3Modal -->
+  <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
+</head>
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <header>
+      <h1>ETHERLEGIONS</h1>
+      <button id="connectWallet">Connect Wallet</button>
+    </header>
+
+    <!-- BANNER -->
+    <section class="banner">
+      <img src="https://apricot-working-dog-205.mypinata.cloud/ipfs/bafkreidzmmn5fxyjmw4bdgfggdxpit7ntydejolzom2sc6bmlyniqjlija" alt="Banner">
+    </section>
+
+    <!-- STATS -->
+    <section class="stats">
+      <p>Total NFTs: <span id="totalSupply">0</span></p>
+      <p>Minted: <span id="minted">0</span></p>
+      <p>Remaining: <span id="remaining">0</span></p>
+    </section>
+
+    <!-- MINT SECTION -->
+    <section class="mint">
+      <h2>Mint Your NFT</h2>
+      <div class="mint-box">
+        <input type="number" id="mintAmount" placeholder="Number of NFTs" min="1">
+        <button id="mintBtn">Mint Now</button>
+      </div>
+      <p class="price-info">
+        Total Price (incl. Gas + Platform Fee): 
+        <span id="totalPrice">0</span> ETH (~$<span id="usdPrice">0</span>)
+      </p>
+    </section>
+
+    <!-- NFT GRID -->
+    <section id="nftGrid" class="nft-grid"></section>
+
+    <!-- ===================== -->
+    <!-- ADMIN PANEL -->
+    <!-- ===================== -->
+    <section class="admin" id="adminPanel" style="display:none;">
+      <h2>Admin Panel</h2>
+
+      <div class="admin-section">
+        <h3>Mint Control</h3>
+        <div class="admin-controls">
+          <button id="pauseBtn">Pause Mint</button>
+          <button id="resumeBtn">Resume Mint</button>
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="admin-section">
+        <h3>Whitelist Sale</h3>
+        <div class="admin-controls">
+          <button id="startWhitelistBtn">Start Whitelist Sale</button>
+          <button id="stopWhitelistBtn">Stop Whitelist Sale</button>
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="admin-section">
+        <h3>Public Sale</h3>
+        <div class="admin-controls">
+          <button id="startPublicBtn">Start Public Sale</button>
+          <button id="stopPublicBtn">Stop Public Sale</button>
+        </div>
+      </div>
+
+      <p id="adminMessage" class="admin-message"></p>
+    </section>
+
+    <!-- ===================== -->
+    <!-- BEAUTIFIED MANAGEMENT SECTION -->
+    <!-- ===================== -->
+    <div class="info-grid">
+      
+      <<!-- ===================== -->
+<!-- ===================== -->
+<!-- WHITELIST + WITHDRAW (Side by Side) -->
+<!-- ===================== -->
+<div class="panel-row">
+  
+  <!-- WHITELIST MANAGEMENT -->
+  <section class="panel-section">
+    <h2>Whitelist Management</h2>
+    <div class="panel-card">
+      <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
+      <div class="button-group">
+        <button id="addWhitelistBtn">Add to Whitelist</button>
+        <button id="removeWhitelistBtn">Remove from Whitelist</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- WITHDRAW FUNDS -->
+  <section class="panel-section">
+    <h2>Withdraw Funds</h2>
+    <div class="panel-card">
+      <p><strong>Collected Fees:</strong> <span id="collectedFees">0.000000</span> ETH</p>
+      <button id="withdrawBtn">Withdraw Platform Fees</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===================== -->
+<!-- SALE STATUS (Below) -->
+<!-- ===================== -->
+<section class="panel-section full-width">
+  <h2>Sale Status</h2>
+  <div class="panel-card">
+    <p><strong>Sale Status:</strong> <span id="saleStatus">Whitelist Active 🟢</span></p>
+  </div>
+</section>
+
+
+
+    <!-- ===================== -->
+    <!-- WHITELIST CHECKER -->
+    <!-- ===================== -->
+    <section class="whitelist-display" id="whitelistDisplaySection" style="margin-top:30px;">
+      <h2>Check Whitelist Status</h2>
+
+      <div class="whitelist-search-container">
+        <input type="text" id="whitelistSearch" placeholder="Enter wallet address">
+        <button id="whitelistSearchBtn">Check</button>
+      </div>
+
+      <p id="whitelistResult" style="font-weight:600; margin-top:10px;"></p>
+    </section>
+
+    <div id="message"></div>
+  </div>
+
+  <!-- MAIN SCRIPT -->
+  <script src="main.js"></script>
+
+  <!-- FILTER & DISPLAY LOGIC -->
+  <script>
+    const whitelistSearch = document.getElementById("whitelistSearch");
+    whitelistSearch.addEventListener("input", () => {
+      const filter = whitelistSearch.value.toLowerCase();
+      const items = document.querySelectorAll("#whitelistList li");
+      items.forEach(item => {
+        const addr = item.innerText.toLowerCase();
+        item.style.display = addr.includes(filter) ? "" : "none";
+      });
+    });
+
+    async function displayWhitelist() {
+      try {
+        if (!window.contract) return;
+        const whitelistList = document.getElementById("whitelistList");
+        if(!whitelistList) return;
+        whitelistList.innerHTML = "";
+        const filter = contract.filters.Minted();
+        const events = await contract.queryFilter(filter, 0, "latest");
+        const seen = new Set();
+
+        for (let evt of events) {
+          if (evt.args && evt.args.minter) {
+            const addr = evt.args.minter;
+            const isWhitelisted = await contract.whitelisted(addr).catch(() => false);
+            if (isWhitelisted && !seen.has(addr)) {
+              seen.add(addr);
+              const li = document.createElement("li");
+              li.innerText = addr;
+              whitelistList.appendChild(li);
+            }
+          }
+        }
+
+        if (seen.size === 0) {
+          const li = document.createElement("li");
+          li.innerText = "No whitelisted addresses yet.";
+          whitelistList.appendChild(li);
+        }
+      } catch (err) {
+        console.error("Failed to fetch whitelist:", err);
+      }
+    }
+
+    const observeDynamicUpdates = () => {
+      const updateAll = async () => {
+        await updateStats();
+        await displayWhitelist();
+      };
+      if (window.contract) contract.on("Minted", updateAll);
+
+      const buttons = [
+        "addWhitelistBtn", "removeWhitelistBtn", "pauseBtn", "resumeBtn",
+        "startWhitelistBtn", "startPublicBtn", "mintBtn", "withdrawBtn"
+      ];
+      buttons.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener("click", updateAll);
+      });
+    };
+
+    const originalConnectWallet = connectWallet;
+    connectWallet = async () => {
+      await originalConnectWallet();
+      await displayWhitelist();
+      observeDynamicUpdates();
+    };
+  </script>
+</body>
+</html>
