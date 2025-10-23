@@ -10,23 +10,10 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.0/dist/ethers.umd.min.js"></script>
   <!-- WalletConnect Provider -->
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  <!-- Coinbase Wallet SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@4.1.0/dist/umd/index.min.js"></script>
   <!-- Web3Modal -->
   <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
-
-  <style>
-    /* Flex container for whitelist + withdraw panels */
-    .panel-row {
-      display: flex;
-      gap: 20px; /* space between the two panels */
-      flex-wrap: wrap; /* responsive for smaller screens */
-      margin-bottom: 20px;
-    }
-
-    .panel-section {
-      flex: 1;
-      min-width: 280px; /* prevents panels from shrinking too small */
-    }
-  </style>
 </head>
 <body>
   <div class="container">
@@ -107,7 +94,7 @@
     <!-- ===================== -->
     <div class="panel-row">
       <!-- WHITELIST MANAGEMENT -->
-      <section class="panel-section" id="whitelistPanel" style="display:none;">
+      <section class="panel-section" id="whitelistPanel" style="flex:1; display:none;">
         <h2>Whitelist Management</h2>
         <div class="panel-card">
           <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
@@ -119,7 +106,7 @@
       </section>
 
       <!-- WITHDRAW FUNDS -->
-      <section class="panel-section" id="withdrawPanel" style="display:none;">
+      <section class="panel-section" id="withdrawPanel" style="flex:1; display:none;">
         <h2>Withdraw Funds</h2>
         <div class="panel-card">
           <p><strong>Collected Fees:</strong> <span id="feesCollected">0.000000</span> ETH</p>
