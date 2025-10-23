@@ -98,26 +98,29 @@
 <!-- ===================== -->
 <div class="panel-row">
   
-  <!-- WHITELIST MANAGEMENT -->
-  <section class="panel-section">
-    <h2>Whitelist Management</h2>
-    <div class="panel-card">
-      <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
-      <div class="button-group">
-        <button id="addWhitelistBtn">Add to Whitelist</button>
-        <button id="removeWhitelistBtn">Remove from Whitelist</button>
-      </div>
-    </div>
-  </section>
+  <!-- ===================== -->
+<!-- WHITELIST MANAGEMENT -->
+<!-- ===================== -->
+<section class="whitelist" style="display:none;">
+  <h2>Whitelist Management</h2>
+  <div class="whitelist-inputs">
+    <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
+  </div>
+  <div class="whitelist-buttons">
+    <button id="addWhitelistBtn">Add to Whitelist</button>
+    <button id="removeWhitelistBtn">Remove from Whitelist</button>
+  </div>
+</section>
 
-  <!-- WITHDRAW FUNDS -->
-  <section class="panel-section">
-    <h2>Withdraw Funds</h2>
-    <div class="panel-card">
-      <p><strong>Collected Fees:</strong> <span id="collectedFees">0.000000</span> ETH</p>
-      <button id="withdrawBtn">Withdraw Platform Fees</button>
-    </div>
-  </section>
+<!-- ===================== -->
+<!-- WITHDRAW FUNDS -->
+<!-- ===================== -->
+<section class="withdraw" style="display:none;">
+  <h2>Withdraw</h2>
+  <button id="withdrawBtn">Withdraw Platform Fees</button>
+  <div id="saleStatus"></div>
+</section>
+
 
 </div>
 
