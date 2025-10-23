@@ -1018,16 +1018,27 @@ const withdrawBtn = document.getElementById("withdrawBtn");
 const whitelistAddressInput = document.getElementById("whitelistAddress");
 
 // ---------------------------
-// Web3Modal init
+// Web3Modal init (Mobile + Desktop)
 // ---------------------------
 function initWeb3Modal() {
     const providerOptions = {
-        injected: { package: null },
+        injected: { package: null }, // MetaMask or other injected wallets
+        walletconnect: {
+            package: window.WalletConnectProvider.default,
+            options: {
+                rpc: {
+                    1: "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID",
+                    5: "https://goerli.infura.io/v3/YOUR_INFURA_PROJECT_ID" // Add more chains if needed
+                },
+                qrcode: true
+            }
+        },
         coinbasewallet: {
             package: window.CoinbaseWalletSDK,
             options: { appName: "ETHERLEGIONS" }
         }
     };
+
     web3Modal = new Web3Modal.default({
         cacheProvider: false,
         providerOptions,
@@ -1042,7 +1053,7 @@ function initWeb3Modal() {
 const PLATFORM_WALLET = "0xa082E12865D934f77de1a44a72413Bd4bBB51adB".toLowerCase(); // Admin wallet
 
 // ---------------------------
-// Connect wallet
+// Connect wallet (mobile + desktop)
 // ---------------------------
 async function connectWallet() {
     try {
@@ -1054,6 +1065,7 @@ async function connectWallet() {
 
         window.contract = contract;
         window.provider = provider;
+        window.signer = signer;
 
         if (connectWalletBtn)
             connectWalletBtn.innerText = `Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
@@ -1061,8 +1073,8 @@ async function connectWallet() {
         // ---------------------------
         // Admin-only UI
         // ---------------------------
-        const whitelistSection = document.querySelector(".panel-section:nth-child(1)"); // Whitelist Management
-        const withdrawSection = document.querySelector(".panel-section:nth-child(2)");  // Withdraw Funds
+        const whitelistSection = document.getElementById("whitelistPanel");
+        const withdrawSection = document.getElementById("withdrawPanel");
 
         if (userAddress === PLATFORM_WALLET) {
             if (adminPanel) adminPanel.style.display = "block";
