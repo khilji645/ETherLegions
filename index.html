@@ -91,31 +91,26 @@
     <!-- WHITELIST + WITHDRAW (Side by Side, Admin Only) -->
     <!-- ===================== -->
     <div class="panel-row">
-      
       <!-- WHITELIST MANAGEMENT -->
       <section class="panel-section" id="whitelistPanel" style="flex:1; display:none;">
-        <!-- WHITELIST MANAGEMENT -->
-<section class="panel-section" id="whitelistPanel" style="flex:1; display:none;">
-  <h2>Whitelist Management</h2>
-  <div class="panel-card">
-    <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
-    <div class="button-group">
-      <button id="addWhitelistBtn" class="admin-btn">Add to Whitelist</button>
-      <button id="removeWhitelistBtn" class="admin-btn">Remove from Whitelist</button>
-    </div>
-  </div>
-</section>
+        <h2>Whitelist Management</h2>
+        <div class="panel-card">
+          <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
+          <div class="button-group">
+            <button id="addWhitelistBtn" class="admin-btn">Add to Whitelist</button>
+            <button id="removeWhitelistBtn" class="admin-btn">Remove from Whitelist</button>
+          </div>
+        </div>
+      </section>
 
-<!-- WITHDRAW FUNDS -->
-<section class="panel-section" id="withdrawPanel" style="flex:1; display:none;">
-  <h2>Withdraw Funds</h2>
-  <div class="panel-card">
-    <p><strong>Collected Fees:</strong> <span id="collectedFees">0.000000</span> ETH</p>
-    <button id="withdrawBtn" class="admin-btn">Withdraw Platform Fees</button>
-  </div>
-</section>
-
-
+      <!-- WITHDRAW FUNDS -->
+      <section class="panel-section" id="withdrawPanel" style="flex:1; display:none;">
+        <h2>Withdraw Funds</h2>
+        <div class="panel-card">
+          <p><strong>Collected Fees:</strong> <span id="feesCollected">0.000000</span> ETH</p>
+          <button id="withdrawBtn" class="admin-btn">Withdraw Platform Fees</button>
+        </div>
+      </section>
     </div>
 
     <!-- ===================== -->
@@ -124,7 +119,7 @@
     <section class="panel-section full-width">
       <h2>Sale Status</h2>
       <div class="panel-card">
-        <p><strong>Sale Status:</strong> <span id="saleStatus">Whitelist Active 🟢</span></p>
+        <p><strong>Sale Status:</strong> <span id="saleStatus">Inactive ⚪</span></p>
       </div>
     </section>
 
@@ -145,33 +140,5 @@
 
   <!-- MAIN SCRIPT -->
   <script src="main.js"></script>
-
-  <!-- SHOW ADMIN PANELS ONLY FOR OWNER -->
-  <script>
-    const originalConnectWallet = connectWallet;
-    connectWallet = async () => {
-      await originalConnectWallet();
-
-      try {
-        if (!window.contract || !window.provider) return;
-        const signer = window.signer || window.provider.getSigner();
-        const addr = await signer.getAddress();
-        const owner = await contract.owner();
-
-        const isAdmin = owner && addr.toLowerCase() === owner.toLowerCase();
-
-        // Show/hide admin panels
-        document.getElementById("adminPanel").style.display = isAdmin ? "block" : "none";
-        document.getElementById("whitelistPanel").style.display = isAdmin ? "block" : "none";
-        document.getElementById("withdrawPanel").style.display = isAdmin ? "block" : "none";
-
-        console.log("Signer:", addr, "Owner:", owner, "IsAdmin:", isAdmin);
-
-      } catch (err) {
-        console.error("Error checking owner panels:", err);
-      }
-    };
-  </script>
 </body>
 </html>
-
