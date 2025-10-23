@@ -88,65 +88,45 @@
     </section>
 
     <!-- ===================== -->
-    <!-- BEAUTIFIED MANAGEMENT SECTION -->
+    <!-- WHITELIST + WITHDRAW SIDE BY SIDE -->
     <!-- ===================== -->
-    <div class="info-grid">
-      
-      <<!-- ===================== -->
-<!-- ===================== -->
-<!-- WHITELIST + WITHDRAW (Side by Side) -->
-<!-- ===================== -->
-<div class="panel-row">
-  
-  <!-- ===================== -->
-<!-- WHITELIST MANAGEMENT -->
-<!-- ===================== -->
-<section class="whitelist" style="display:none;">
-  <h2>Whitelist Management</h2>
-  <div class="whitelist-inputs">
-    <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
-  </div>
-  <div class="whitelist-buttons">
-    <button id="addWhitelistBtn">Add to Whitelist</button>
-    <button id="removeWhitelistBtn">Remove from Whitelist</button>
-  </div>
-</section>
+    <div class="panel-row" style="display:flex; gap:20px; margin-top:20px;">
 
-<!-- ===================== -->
-<!-- WITHDRAW FUNDS -->
-<!-- ===================== -->
-<section class="withdraw" style="display:none;">
-  <h2>Withdraw</h2>
-  <button id="withdrawBtn">Withdraw Platform Fees</button>
-  <div id="saleStatus"></div>
-</section>
+      <!-- Whitelist Management -->
+      <section class="whitelist" style="flex:1; display:none;">
+        <h2>Whitelist Management</h2>
+        <div class="whitelist-inputs">
+          <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
+        </div>
+        <div class="whitelist-buttons">
+          <button id="addWhitelistBtn">Add to Whitelist</button>
+          <button id="removeWhitelistBtn">Remove from Whitelist</button>
+        </div>
+      </section>
 
+      <!-- Withdraw Funds -->
+      <section class="withdraw" style="flex:1; display:none;">
+        <h2>Withdraw</h2>
+        <button id="withdrawBtn">Withdraw Platform Fees</button>
+      </section>
 
-</div>
+    </div>
 
-<!-- ===================== -->
-<!-- SALE STATUS (Below) -->
-<!-- ===================== -->
-<section class="panel-section full-width">
-  <h2>Sale Status</h2>
-  <div class="panel-card">
-    <p><strong>Sale Status:</strong> <span id="saleStatus">Whitelist Active 🟢</span></p>
-  </div>
-</section>
+    <!-- Sale Status -->
+    <section class="panel-section full-width" style="margin-top:20px;">
+      <h2>Sale Status</h2>
+      <div class="panel-card">
+        <p><strong>Status:</strong> <span id="saleStatus">Whitelist Active 🟢</span></p>
+      </div>
+    </section>
 
-
-
-    <!-- ===================== -->
-    <!-- WHITELIST CHECKER -->
-    <!-- ===================== -->
+    <!-- Whitelist Checker -->
     <section class="whitelist-display" id="whitelistDisplaySection" style="margin-top:30px;">
       <h2>Check Whitelist Status</h2>
-
       <div class="whitelist-search-container">
         <input type="text" id="whitelistSearch" placeholder="Enter wallet address">
         <button id="whitelistSearchBtn">Check</button>
       </div>
-
       <p id="whitelistResult" style="font-weight:600; margin-top:10px;"></p>
     </section>
 
@@ -155,75 +135,5 @@
 
   <!-- MAIN SCRIPT -->
   <script src="main.js"></script>
-
-  <!-- FILTER & DISPLAY LOGIC -->
-  <script>
-    const whitelistSearch = document.getElementById("whitelistSearch");
-    whitelistSearch.addEventListener("input", () => {
-      const filter = whitelistSearch.value.toLowerCase();
-      const items = document.querySelectorAll("#whitelistList li");
-      items.forEach(item => {
-        const addr = item.innerText.toLowerCase();
-        item.style.display = addr.includes(filter) ? "" : "none";
-      });
-    });
-
-    async function displayWhitelist() {
-      try {
-        if (!window.contract) return;
-        const whitelistList = document.getElementById("whitelistList");
-        if(!whitelistList) return;
-        whitelistList.innerHTML = "";
-        const filter = contract.filters.Minted();
-        const events = await contract.queryFilter(filter, 0, "latest");
-        const seen = new Set();
-
-        for (let evt of events) {
-          if (evt.args && evt.args.minter) {
-            const addr = evt.args.minter;
-            const isWhitelisted = await contract.whitelisted(addr).catch(() => false);
-            if (isWhitelisted && !seen.has(addr)) {
-              seen.add(addr);
-              const li = document.createElement("li");
-              li.innerText = addr;
-              whitelistList.appendChild(li);
-            }
-          }
-        }
-
-        if (seen.size === 0) {
-          const li = document.createElement("li");
-          li.innerText = "No whitelisted addresses yet.";
-          whitelistList.appendChild(li);
-        }
-      } catch (err) {
-        console.error("Failed to fetch whitelist:", err);
-      }
-    }
-
-    const observeDynamicUpdates = () => {
-      const updateAll = async () => {
-        await updateStats();
-        await displayWhitelist();
-      };
-      if (window.contract) contract.on("Minted", updateAll);
-
-      const buttons = [
-        "addWhitelistBtn", "removeWhitelistBtn", "pauseBtn", "resumeBtn",
-        "startWhitelistBtn", "startPublicBtn", "mintBtn", "withdrawBtn"
-      ];
-      buttons.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.addEventListener("click", updateAll);
-      });
-    };
-
-    const originalConnectWallet = connectWallet;
-    connectWallet = async () => {
-      await originalConnectWallet();
-      await displayWhitelist();
-      observeDynamicUpdates();
-    };
-  </script>
 </body>
 </html>
