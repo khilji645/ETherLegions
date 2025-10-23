@@ -88,48 +88,62 @@
     </section>
 
     <!-- ===================== -->
-    <!-- WHITELIST + WITHDRAW (Side by Side, Admin Only) -->
+    <!-- BEAUTIFIED MANAGEMENT SECTION -->
     <!-- ===================== -->
-    <div class="panel-row" style="margin-top:20px;">
-      <!-- Whitelist Management -->
-      <section class="panel-section" id="whitelistPanel" style="display:none;">
-        <h2>Whitelist Management</h2>
-        <div class="panel-card">
-          <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
-          <div class="button-group">
-            <button id="addWhitelistBtn" class="admin-btn">Add to Whitelist</button>
-            <button id="removeWhitelistBtn" class="admin-btn">Remove from Whitelist</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Withdraw Funds -->
-      <section class="panel-section" id="withdrawPanel" style="display:none;">
-        <h2>Withdraw Funds</h2>
-        <div class="panel-card">
-          <p><strong>Collected Fees:</strong> <span id="collectedFees">0.000000</span> ETH</p>
-          <div class="button-group">
-            <button id="withdrawBtn" class="admin-btn">Withdraw Platform Fees</button>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <!-- Sale Status -->
-    <section class="panel-section full-width" style="margin-top:20px;">
-      <h2>Sale Status</h2>
-      <div class="panel-card">
-        <p><strong>Status:</strong> <span id="saleStatus">Whitelist Active 🟢</span></p>
+    <div class="info-grid">
+      
+      <<!-- ===================== -->
+<!-- ===================== -->
+<!-- WHITELIST + WITHDRAW (Side by Side) -->
+<!-- ===================== -->
+<div class="panel-row">
+  
+  <!-- WHITELIST MANAGEMENT -->
+  <section class="panel-section">
+    <h2>Whitelist Management</h2>
+    <div class="panel-card">
+      <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
+      <div class="button-group">
+        <button id="addWhitelistBtn">Add to Whitelist</button>
+        <button id="removeWhitelistBtn">Remove from Whitelist</button>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Whitelist Checker -->
+  <!-- WITHDRAW FUNDS -->
+  <section class="panel-section">
+    <h2>Withdraw Funds</h2>
+    <div class="panel-card">
+      <p><strong>Collected Fees:</strong> <span id="collectedFees">0.000000</span> ETH</p>
+      <button id="withdrawBtn">Withdraw Platform Fees</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===================== -->
+<!-- SALE STATUS (Below) -->
+<!-- ===================== -->
+<section class="panel-section full-width">
+  <h2>Sale Status</h2>
+  <div class="panel-card">
+    <p><strong>Sale Status:</strong> <span id="saleStatus">Whitelist Active 🟢</span></p>
+  </div>
+</section>
+
+
+
+    <!-- ===================== -->
+    <!-- WHITELIST CHECKER -->
+    <!-- ===================== -->
     <section class="whitelist-display" id="whitelistDisplaySection" style="margin-top:30px;">
       <h2>Check Whitelist Status</h2>
+
       <div class="whitelist-search-container">
         <input type="text" id="whitelistSearch" placeholder="Enter wallet address">
         <button id="whitelistSearchBtn">Check</button>
       </div>
+
       <p id="whitelistResult" style="font-weight:600; margin-top:10px;"></p>
     </section>
 
@@ -139,29 +153,73 @@
   <!-- MAIN SCRIPT -->
   <script src="main.js"></script>
 
-  <!-- SHOW ADMIN PANELS ONLY FOR OWNER -->
+  <!-- FILTER & DISPLAY LOGIC -->
   <script>
+    const whitelistSearch = document.getElementById("whitelistSearch");
+    whitelistSearch.addEventListener("input", () => {
+      const filter = whitelistSearch.value.toLowerCase();
+      const items = document.querySelectorAll("#whitelistList li");
+      items.forEach(item => {
+        const addr = item.innerText.toLowerCase();
+        item.style.display = addr.includes(filter) ? "" : "none";
+      });
+    });
+
+    async function displayWhitelist() {
+      try {
+        if (!window.contract) return;
+        const whitelistList = document.getElementById("whitelistList");
+        if(!whitelistList) return;
+        whitelistList.innerHTML = "";
+        const filter = contract.filters.Minted();
+        const events = await contract.queryFilter(filter, 0, "latest");
+        const seen = new Set();
+
+        for (let evt of events) {
+          if (evt.args && evt.args.minter) {
+            const addr = evt.args.minter;
+            const isWhitelisted = await contract.whitelisted(addr).catch(() => false);
+            if (isWhitelisted && !seen.has(addr)) {
+              seen.add(addr);
+              const li = document.createElement("li");
+              li.innerText = addr;
+              whitelistList.appendChild(li);
+            }
+          }
+        }
+
+        if (seen.size === 0) {
+          const li = document.createElement("li");
+          li.innerText = "No whitelisted addresses yet.";
+          whitelistList.appendChild(li);
+        }
+      } catch (err) {
+        console.error("Failed to fetch whitelist:", err);
+      }
+    }
+
+    const observeDynamicUpdates = () => {
+      const updateAll = async () => {
+        await updateStats();
+        await displayWhitelist();
+      };
+      if (window.contract) contract.on("Minted", updateAll);
+
+      const buttons = [
+        "addWhitelistBtn", "removeWhitelistBtn", "pauseBtn", "resumeBtn",
+        "startWhitelistBtn", "startPublicBtn", "mintBtn", "withdrawBtn"
+      ];
+      buttons.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener("click", updateAll);
+      });
+    };
+
     const originalConnectWallet = connectWallet;
     connectWallet = async () => {
       await originalConnectWallet();
-
-      if (!window.contract || !window.provider) return;
-
-      try {
-        const signer = provider.getSigner();
-        const addr = await signer.getAddress();
-        const owner = await contract.owner();
-
-        const isAdmin = owner && addr.toLowerCase() === owner.toLowerCase();
-
-        // Show/hide admin-only panels
-        document.getElementById("whitelistPanel").style.display = isAdmin ? "block" : "none";
-        document.getElementById("withdrawPanel").style.display = isAdmin ? "block" : "none";
-        document.getElementById("adminPanel").style.display = isAdmin ? "block" : "none";
-
-      } catch (err) {
-        console.error("Failed to show admin panels:", err);
-      }
+      await displayWhitelist();
+      observeDynamicUpdates();
     };
   </script>
 </body>
