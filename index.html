@@ -87,33 +87,33 @@
       <p id="adminMessage" class="admin-message"></p>
     </section>
 
-    <!-- Whitelist + Withdraw (Side by Side, Admin Only) -->
-<div class="panel-row" style="display:flex; gap:20px; margin-top:20px;">
+    <!-- ===================== -->
+    <!-- WHITELIST + WITHDRAW (Side by Side, Admin Only) -->
+    <!-- ===================== -->
+    <div class="panel-row" style="margin-top:20px;">
+      <!-- Whitelist Management -->
+      <section class="panel-section" id="whitelistPanel" style="display:none;">
+        <h2>Whitelist Management</h2>
+        <div class="panel-card">
+          <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
+          <div class="button-group">
+            <button id="addWhitelistBtn" class="admin-btn">Add to Whitelist</button>
+            <button id="removeWhitelistBtn" class="admin-btn">Remove from Whitelist</button>
+          </div>
+        </div>
+      </section>
 
-  <!-- Whitelist Management -->
-  <section class="panel-section" id="whitelistPanel" style="flex:1; display:none;">
-    <h2>Whitelist Management</h2>
-    <div class="panel-card">
-      <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
-      <div class="admin-controls button-group">
-        <button id="addWhitelistBtn" class="admin-btn">Add to Whitelist</button>
-        <button id="removeWhitelistBtn" class="admin-btn">Remove from Whitelist</button>
-      </div>
+      <!-- Withdraw Funds -->
+      <section class="panel-section" id="withdrawPanel" style="display:none;">
+        <h2>Withdraw Funds</h2>
+        <div class="panel-card">
+          <p><strong>Collected Fees:</strong> <span id="collectedFees">0.000000</span> ETH</p>
+          <div class="button-group">
+            <button id="withdrawBtn" class="admin-btn">Withdraw Platform Fees</button>
+          </div>
+        </div>
+      </section>
     </div>
-  </section>
-
-  <!-- Withdraw Funds -->
-  <section class="panel-section" id="withdrawPanel" style="flex:1; display:none;">
-    <h2>Withdraw Funds</h2>
-    <div class="panel-card">
-      <p><strong>Collected Fees:</strong> <span id="collectedFees">0.000000</span> ETH</p>
-      <div class="admin-controls">
-        <button id="withdrawBtn" class="admin-btn">Withdraw Platform Fees</button>
-      </div>
-    </div>
-  </section>
-
-</div>
 
     <!-- Sale Status -->
     <section class="panel-section full-width" style="margin-top:20px;">
@@ -145,22 +145,22 @@
     connectWallet = async () => {
       await originalConnectWallet();
 
-      if (!window.contract) return;
+      if (!window.contract || !window.provider) return;
 
-      // Get owner
-      const owner = await contract.owner().catch(() => null);
-      const addr = await signer.getAddress();
+      try {
+        const signer = provider.getSigner();
+        const addr = await signer.getAddress();
+        const owner = await contract.owner();
 
-      const isAdmin = owner && addr.toLowerCase() === owner.toLowerCase();
-      const whitelistPanel = document.getElementById("whitelistPanel");
-      const withdrawPanel = document.getElementById("withdrawPanel");
+        const isAdmin = owner && addr.toLowerCase() === owner.toLowerCase();
 
-      if (isAdmin) {
-        if (whitelistPanel) whitelistPanel.style.display = "block";
-        if (withdrawPanel) withdrawPanel.style.display = "block";
-      } else {
-        if (whitelistPanel) whitelistPanel.style.display = "none";
-        if (withdrawPanel) withdrawPanel.style.display = "none";
+        // Show/hide admin-only panels
+        document.getElementById("whitelistPanel").style.display = isAdmin ? "block" : "none";
+        document.getElementById("withdrawPanel").style.display = isAdmin ? "block" : "none";
+        document.getElementById("adminPanel").style.display = isAdmin ? "block" : "none";
+
+      } catch (err) {
+        console.error("Failed to show admin panels:", err);
       }
     };
   </script>
