@@ -1037,10 +1037,13 @@ function initWeb3Modal() {
 }
 
 // ---------------------------
-// Connect wallet
+// Admin wallet
 // ---------------------------
 const PLATFORM_WALLET = "0xa082E12865D934f77de1a44a72413Bd4bBB51adB".toLowerCase(); // Admin wallet
 
+// ---------------------------
+// Connect wallet
+// ---------------------------
 async function connectWallet() {
     try {
         const instance = await web3Modal.connect();
@@ -1055,22 +1058,19 @@ async function connectWallet() {
         if (connectWalletBtn)
             connectWalletBtn.innerText = `Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
 
-        // Admin-only sections
-        const whitelistSection = document.querySelector(".whitelist");
-        const whitelistButtons = document.querySelector(".whitelist-buttons");
-        const whitelistInputs = document.querySelector(".whitelist-inputs");
-        const withdrawSection = document.querySelector(".withdraw");
+        // ---------------------------
+        // Admin-only UI
+        // ---------------------------
+        const whitelistSection = document.querySelector(".panel-section:nth-child(1)"); // Whitelist Management
+        const withdrawSection = document.querySelector(".panel-section:nth-child(2)");  // Withdraw Funds
 
         if (userAddress === PLATFORM_WALLET) {
             if (adminPanel) adminPanel.style.display = "block";
             if (whitelistSection) whitelistSection.style.display = "block";
-            if (whitelistButtons) whitelistButtons.style.display = "flex";
-            if (whitelistInputs) whitelistInputs.style.display = "flex";
             if (withdrawSection) withdrawSection.style.display = "block";
         } else {
             if (adminPanel) adminPanel.style.display = "none";
-            if (whitelistButtons) whitelistButtons.style.display = "none";
-            if (whitelistInputs) whitelistInputs.style.display = "none";
+            if (whitelistSection) whitelistSection.style.display = "none";
             if (withdrawSection) withdrawSection.style.display = "none";
         }
 
@@ -1264,9 +1264,6 @@ async function removeWhitelist() {
     await refreshAll();
 }
 
-// ---------------------------
-// Withdraw platform fees
-// ---------------------------
 async function withdrawFunds() {
     if(userAddress !== PLATFORM_WALLET) return;
     if(!contract) return;
@@ -1384,5 +1381,7 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // ---------------------------
 // On load
 // ---------------------------
-window.onload = ()=>{ initWeb3Modal(); updatePrice(); };
+window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
+
 
