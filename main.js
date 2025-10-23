@@ -1022,17 +1022,22 @@ const whitelistAddressInput = document.getElementById("whitelistAddress");
 // ---------------------------
 function initWeb3Modal() {
     const providerOptions = {
-        injected: { package: null }, // MetaMask or other injected wallets
+        // MetaMask and other injected wallets
+        injected: { package: null },
+
+        // WalletConnect (Mobile & QR code)
         walletconnect: {
             package: window.WalletConnectProvider.default,
             options: {
                 rpc: {
-                    1: "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID",
-                    5: "https://goerli.infura.io/v3/YOUR_INFURA_PROJECT_ID" // Add more chains if needed
+                    1: "https://mainnet.infura.io/v3/a70fd3de0ceb40ff848b3a20bc1df402",      // Ethereum Mainnet
+                    11155111: "https://sepolia.infura.io/v3/a70fd3de0ceb40ff848b3a20bc1df402" // Sepolia Testnet
                 },
                 qrcode: true
             }
         },
+
+        // Coinbase Wallet
         coinbasewallet: {
             package: window.CoinbaseWalletSDK,
             options: { appName: "ETHERLEGIONS" }
@@ -1040,12 +1045,13 @@ function initWeb3Modal() {
     };
 
     web3Modal = new Web3Modal.default({
-        cacheProvider: false,
-        providerOptions,
-        disableInjectedProvider: false,
+        cacheProvider: false,          // Always prompt to select wallet
+        providerOptions,               // Wallet providers
+        disableInjectedProvider: false, // Allow MetaMask
         theme: "dark"
     });
 }
+
 
 // ---------------------------
 // Admin wallet
@@ -1394,6 +1400,3 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // On load
 // ---------------------------
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
-
-
-
