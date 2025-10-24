@@ -1,4 +1,4 @@
-const CONTRACT_ADDRESS = "0x4C8b929f0eb6519Ca4Cd9AeDB5Aa85589fBEf02C"; 
+const CONTRACT_ADDRESS = "0xA4907928406822039c52ea5Cb290E855575ED6d3"; 
 const ABI =[
 	{
 		"inputs": [
@@ -750,7 +750,39 @@ const ABI =[
 	},
 	{
 		"inputs": [],
+		"name": "MAX_PER_WALLET",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "maxSupply",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "mintedPerAddress",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -989,9 +1021,11 @@ const ABI =[
 ]
 
 
-let provider, signer, contract, userAddress, web3Modal; 
+
+
 let ethPriceUSD = 3900;
 let FALLBACK_TOTAL_SUPPLY = 2221;
+const MAX_MINT_PER_USER = 20; // Max per user
 
 // Elements
 const connectWalletBtn = document.getElementById("connectWallet");
@@ -1017,52 +1051,57 @@ const removeWhitelistBtn = document.getElementById("removeWhitelistBtn");
 const withdrawBtn = document.getElementById("withdrawBtn");
 const whitelistAddressInput = document.getElementById("whitelistAddress");
 
+// Track user's minted amount
+let userMintedAmount = 0;
+
 // ---------------------------
 // Web3Modal init (Mobile + Desktop)
 // ---------------------------
+let web3Modal;
 function initWeb3Modal() {
     const providerOptions = {
-        // MetaMask and other injected wallets
         injected: { package: null },
-
-        // WalletConnect (Mobile & QR code)
         walletconnect: {
-            package: window.WalletConnectProvider.default,
+            package: window.WalletConnectProvider?.default || window.WalletConnectProvider,
             options: {
                 rpc: {
-                    1: "https://mainnet.infura.io/v3/a70fd3de0ceb40ff848b3a20bc1df402",      // Ethereum Mainnet
-                    11155111: "https://sepolia.infura.io/v3/a70fd3de0ceb40ff848b3a20bc1df402" // Sepolia Testnet
+                    1: NETWORKS[1].rpc,
+                    11155111: NETWORKS[11155111].rpc
                 },
-                qrcode: true
+                qrcode: true,
+                bridge: "https://bridge.walletconnect.org"
             }
         },
-
-        // Coinbase Wallet
         coinbasewallet: {
             package: window.CoinbaseWalletSDK,
-            options: { appName: "ETHERLEGIONS" }
+            options: {
+                appName: "ETHERLEGIONS",
+                infuraId: INFURA_ID,
+                rpc: NETWORKS[TARGET_CHAIN_ID].rpc,
+                chainId: TARGET_CHAIN_ID,
+                darkMode: true
+            }
         }
     };
-
     web3Modal = new Web3Modal.default({
-        cacheProvider: false,          // Always prompt to select wallet
-        providerOptions,               // Wallet providers
-        disableInjectedProvider: false, // Allow MetaMask
+        cacheProvider: false,
+        providerOptions,
+        disableInjectedProvider: false,
         theme: "dark"
     });
 }
 
+// ---------------------------
+// Global variables
+// ---------------------------
+let provider, signer, userAddress, contract;
 
 // ---------------------------
-// Admin wallet
-// ---------------------------
-const PLATFORM_WALLET = "0xa082E12865D934f77de1a44a72413Bd4bBB51adB".toLowerCase(); // Admin wallet
-
-// ---------------------------
-// Connect wallet (mobile + desktop)
+// Connect Wallet Function
 // ---------------------------
 async function connectWallet() {
     try {
+        if (!web3Modal) initWeb3Modal();
         const instance = await web3Modal.connect();
         provider = new ethers.BrowserProvider(instance);
         signer = await provider.getSigner();
@@ -1073,12 +1112,21 @@ async function connectWallet() {
         window.provider = provider;
         window.signer = signer;
 
+        const network = await provider.getNetwork();
+        if (network.chainId !== TARGET_CHAIN_ID) {
+            try {
+                await instance.request({
+                    method: "wallet_switchEthereumChain",
+                    params: [{ chainId: `0x${TARGET_CHAIN_ID.toString(16)}` }]
+                });
+            } catch (switchError) {
+                console.warn("Failed to switch network. User may need to switch manually.", switchError);
+            }
+        }
+
         if (connectWalletBtn)
             connectWalletBtn.innerText = `Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
 
-        // ---------------------------
-        // Admin-only UI
-        // ---------------------------
         const whitelistSection = document.getElementById("whitelistPanel");
         const withdrawSection = document.getElementById("withdrawPanel");
 
@@ -1092,9 +1140,18 @@ async function connectWallet() {
             if (withdrawSection) withdrawSection.style.display = "none";
         }
 
+        instance.on("accountsChanged", () => { connectWallet(); });
+        instance.on("chainChanged", (chainIdHex) => {
+            const chainIdDec = parseInt(chainIdHex, 16);
+            if (chainIdDec !== TARGET_CHAIN_ID) {
+                alert(`Please switch to ${NETWORKS[TARGET_CHAIN_ID].name}`);
+            }
+        });
+
         await refreshAll();
+
     } catch (err) {
-        console.error(err);
+        console.error("Wallet connection failed:", err);
         if (messageEl)
             messageEl.innerText = "Failed to connect wallet: " + (err.message || err);
     }
@@ -1196,7 +1253,7 @@ async function updatePrice() {
 }
 
 // ---------------------------
-// Mint NFTs
+// Mint NFTs with max limit and CAPTCHA
 // ---------------------------
 async function mintNFTs() {
     if (messageEl) messageEl.innerText = "";
@@ -1206,14 +1263,32 @@ async function mintNFTs() {
         messageEl.innerText = "Enter a valid number of NFTs";
         return;
     }
+
+    // Max per user check
+    if ((userMintedAmount + amount) > MAX_MINT_PER_USER) {
+        messageEl.innerText = `You can only mint up to ${MAX_MINT_PER_USER} NFTs. You have already minted ${userMintedAmount}.`;
+        return;
+    }
+
+    // CAPTCHA check
+    const captchaResponse = grecaptcha.getResponse();
+    if (!captchaResponse) {
+        messageEl.innerText = "Please complete the CAPTCHA to proceed.";
+        return;
+    }
+
     try {
         const platformFeeETHBN = await contract.getPlatformFeeInWei();
         const feeETH = Number(ethers.formatEther(platformFeeETHBN));
-        const value = ethers.parseEther((amount*feeETH).toString());
+        const value = ethers.parseEther((amount * feeETH).toString());
         const tx = await contract.mint(amount, { value });
         messageEl.innerText = "Transaction sent... waiting for confirmation";
         await tx.wait();
         messageEl.innerText = "Mint successful!";
+
+        userMintedAmount += amount;
+        grecaptcha.reset();
+
         await refreshAll();
     } catch(err) {
         console.error(err);
