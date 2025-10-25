@@ -1252,6 +1252,17 @@ async function updatePrice() {
 // ---------------------------
 // Mint NFTs with max limit and CAPTCHA
 // ---------------------------
+async function ensureBaseNetwork() {
+  const provider = window.ethereum;
+  const currentChainId = await provider.request({ method: 'eth_chainId' });
+  if (parseInt(currentChainId, 16) !== TARGET_CHAIN_ID) {
+    await provider.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0x2105' }], // 8453 in hex
+    });
+  }
+}
+
 async function mintNFTs() {
     if (messageEl) messageEl.innerText = "";
     if (!mintAmountInput) return;
@@ -1472,6 +1483,7 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // On load
 // ---------------------------
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
 
 
 
