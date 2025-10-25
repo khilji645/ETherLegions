@@ -1205,56 +1205,6 @@ async function updatePrice() {
 }
 
 // ---------------------------
-// Add NFT to MetaMask
-// ---------------------------
-async function addNFTtoMetaMask(tokenId, tokenURI) {
-    if (!window.ethereum || !tokenId || !tokenURI) return;
-    try {
-        let imageURI = tokenURI;
-
-        // If tokenURI points to JSON metadata, fetch image
-        if (tokenURI.endsWith(".json") || tokenURI.includes(".json")) {
-            try {
-                const response = await fetch(tokenURI);
-                const metadata = await response.json();
-
-                if (metadata.image) {
-                    imageURI = metadata.image;
-
-                    // Handle IPFS links
-                    if (imageURI.startsWith("ipfs://")) {
-                        imageURI = imageURI.replace("ipfs://", "https://ipfs.io/ipfs/");
-                    }
-                }
-            } catch (err) {
-                console.warn("Failed to fetch metadata for MetaMask", tokenId, err);
-            }
-        } else if (tokenURI.startsWith("ipfs://")) {
-            imageURI = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
-        }
-
-        await window.ethereum.request({
-            method: 'wallet_watchAsset',
-            params: {
-                type: 'ERC721',
-                options: {
-                    address: CONTRACT_ADDRESS,
-                    symbol: 'ELG',
-                    decimals: 0,
-                    image: imageURI,
-                    tokenId: tokenId.toString()
-                }
-            }
-        });
-
-        console.log(`NFT ${tokenId} added to MetaMask with image ${imageURI}`);
-    } catch (err) {
-        console.warn("Failed to add NFT to MetaMask:", err);
-    }
-}
-
-
-// ---------------------------
 // Mint NFTs
 // ---------------------------
 async function mintNFTs() {
@@ -1287,11 +1237,17 @@ async function mintNFTs() {
         userMintedAmount += amount;
         grecaptcha.reset();
 
-        // Automatically add minted NFTs to MetaMask
+        // Automatically add minted NFTs to MetaMask and display on page
+        const totalMintedNow = Number(await contract.totalMinted());
         for (let i = 0; i < amount; i++) {
-            const newTokenId = Number(await contract.totalMinted()) - amount + i + 1;
+            const newTokenId = totalMintedNow - amount + i + 1;
             const tokenURI = await contract.tokenURI(newTokenId).catch(() => null);
-            if (tokenURI) addNFTtoMetaMask(newTokenId, tokenURI);
+            if (!tokenURI) continue;
+
+            addNFTtoMetaMask(newTokenId, tokenURI);
+
+            // Display NFT immediately for the user
+            displayNFTForUser(newTokenId, tokenURI);
         }
 
         await refreshAll();
@@ -1302,66 +1258,81 @@ async function mintNFTs() {
 }
 
 // ---------------------------
-// Display NFTs
+// Display NFT only for connected user
+// ---------------------------
+async function displayNFTForUser(tokenId, tokenURI) {
+    if (!nftGrid || !contract || !userAddress) return;
+
+    // Check owner
+    let owner;
+    try {
+        owner = await contract.ownerOf(tokenId);
+        owner = owner.toLowerCase();
+    } catch (err) {
+        console.warn("Failed to fetch owner for token", tokenId, err);
+        return;
+    }
+    if (owner !== userAddress) return;
+
+    let imageURI = tokenURI;
+    if (tokenURI.endsWith(".json") || tokenURI.includes(".json")) {
+        try {
+            const response = await fetch(tokenURI);
+            const metadata = await response.json();
+            if (metadata.image) {
+                imageURI = metadata.image;
+                if (imageURI.startsWith("ipfs://")) {
+                    imageURI = imageURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+                }
+            }
+        } catch (err) { console.warn("Failed to fetch metadata for user NFT", tokenId, err); }
+    } else if (tokenURI.startsWith("ipfs://")) {
+        imageURI = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+    }
+
+    const div = document.createElement("div");
+    div.classList.add("nft-card");
+    div.innerHTML = `<img src="${imageURI}" alt="NFT ${tokenId}" style="width:200px; height:auto;"><p>ID: ${tokenId}</p>`;
+    nftGrid.appendChild(div);
+}
+
+// ---------------------------
+// Display only user's minted NFTs
 // ---------------------------
 async function displayMintedNFTs() {
-    if (!nftGrid) return;
+    if (!nftGrid || !contract || !userAddress) return;
     nftGrid.innerHTML = "";
-    if (!contract) return;
+
     try {
         const totalMintedBN = await contract.totalMinted();
         const totalMinted = Number(totalMintedBN || 0);
 
         for (let i = 0; i < totalMinted; i++) {
+            const tokenId = i + 1;
+            let owner;
             try {
-                let tokenURI;
-                if (typeof contract.tokenURI === "function") {
-                    tokenURI = await contract.tokenURI(i + 1);
-                } else if (typeof contract.tokenURIs === "function") {
-                    tokenURI = await contract.tokenURIs(i);
-                }
-                if (!tokenURI) continue;
-
-                let imageURI = tokenURI;
-
-                // If tokenURI is JSON metadata, fetch and extract image
-                if (tokenURI.endsWith(".json") || tokenURI.includes(".json")) {
-                    try {
-                        const response = await fetch(tokenURI);
-                        const metadata = await response.json();
-                        if (metadata.image) {
-                            imageURI = metadata.image;
-                            if (imageURI.startsWith("ipfs://")) {
-                                imageURI = imageURI.replace("ipfs://", "https://ipfs.io/ipfs/");
-                            }
-                        }
-                    } catch (err) {
-                        console.warn("Failed to fetch metadata for token", i + 1, err);
-                    }
-                } else if (tokenURI.startsWith("ipfs://")) {
-                    imageURI = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
-                }
-
-                // Display NFT in grid
-                const div = document.createElement("div");
-                div.classList.add("nft-card");
-                div.innerHTML = `<img src="${imageURI}" alt="NFT ${i + 1}" style="width:200px; height:auto;"><p>ID: ${i + 1}</p>`;
-                nftGrid.appendChild(div);
-
-                // Automatically add NFT to MetaMask
-                if (window.ethereum && window.addNFTtoMetaMask) {
-                    window.addNFTtoMetaMask(i + 1, tokenURI);
-                }
-
-            } catch (e) {
-                console.warn("Error displaying NFT", i + 1, e);
+                owner = await contract.ownerOf(tokenId);
+                owner = owner.toLowerCase();
+            } catch (err) {
                 continue;
             }
+            if (owner !== userAddress) continue;
+
+            let tokenURI;
+            if (typeof contract.tokenURI === "function") {
+                tokenURI = await contract.tokenURI(tokenId);
+            } else if (typeof contract.tokenURIs === "function") {
+                tokenURI = await contract.tokenURIs(i);
+            }
+            if (!tokenURI) continue;
+
+            displayNFTForUser(tokenId, tokenURI);
         }
     } catch (e) {
         console.error("displayMintedNFTs error:", e);
     }
 }
+
 
 // ---------------------------
 // Show whitelist
