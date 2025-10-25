@@ -1001,7 +1001,7 @@ const ABI =[
 		"type": "function"
 	}
 ]
-let ethPriceUSD = 3900;
+let ethPriceUSD = 3900; 
 let FALLBACK_TOTAL_SUPPLY = 2221;
 const MAX_MINT_PER_USER = 20; // Max per user
 const FIXED_PLATFORM_FEE_ETH = 0.0007699; // $3 at $3900/ETH
@@ -1070,6 +1070,40 @@ function initWeb3Modal() {
 }
 
 let provider, signer, userAddress, contract;
+
+// ---------------------------
+// Update stats
+// ---------------------------
+async function updateStats() {
+    if (!contract) return;
+
+    try {
+        let totalSupply = FALLBACK_TOTAL_SUPPLY;
+        if (typeof contract.totalSupply === "function") {
+            totalSupply = Number(await contract.totalSupply());
+        }
+
+        let minted = 0;
+        if (typeof contract.totalMinted === "function") {
+            minted = Number(await contract.totalMinted());
+        }
+
+        const remaining = totalSupply - minted;
+
+        let feesCollected = 0;
+        if (provider) {
+            const balance = await provider.getBalance(CONTRACT_ADDRESS);
+            feesCollected = Number(ethers.formatEther(balance));
+        }
+
+        if (document.getElementById("totalSupply")) document.getElementById("totalSupply").innerText = totalSupply;
+        if (document.getElementById("minted")) document.getElementById("minted").innerText = minted;
+        if (document.getElementById("remaining")) document.getElementById("remaining").innerText = remaining;
+        if (document.getElementById("feesCollected")) document.getElementById("feesCollected").innerText = feesCollected.toFixed(6);
+    } catch(err) {
+        console.error("updateStats error:", err);
+    }
+}
 
 // ---------------------------
 // Connect Wallet
@@ -1171,7 +1205,7 @@ async function updatePrice() {
 }
 
 // ---------------------------
-// Mint NFTs (Fixed Fee)
+// Mint NFTs
 // ---------------------------
 async function mintNFTs() {
     if (messageEl) messageEl.innerText = "";
@@ -1389,3 +1423,5 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // On load
 // ---------------------------
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
+
