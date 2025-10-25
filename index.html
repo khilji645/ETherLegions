@@ -43,7 +43,7 @@
       <h2>Mint Your NFT</h2>
       <div class="mint-box">
         <input type="number" id="mintAmount" placeholder="Number of NFTs" min="1">
-        <div class="g-recaptcha" data-sitekey="6Lc7GPUrAAAAAGVFjI219WeeX7g4HxbIrFKvjiDw"></div>
+        <div class="g-recaptcha" data-sitekey="6LcJFPUrAAAAAHObh-XCumUeJdmJ3FWd_Ms3qVyA"></div>
         <button id="mintBtn">Mint Now</button>
       </div>
       <p class="price-info">
@@ -133,15 +133,15 @@
   </div>
 
   <!-- CONFIG VARIABLES -->
-  <script>
-    const INFURA_ID = "a70fd3de0ceb40ff848b3a20bc1df402";
-    const PLATFORM_WALLET = "0xa082E12865D934f77de1a44a72413Bd4bBB51adB".toLowerCase();
-    const NETWORKS = {
-      1: { name: "Ethereum Mainnet", chainId: 1, rpc: `https://mainnet.infura.io/v3/${INFURA_ID}` },
-      11155111: { name: "Sepolia Testnet", chainId: 11155111, rpc: `https://sepolia.infura.io/v3/${INFURA_ID}` }
-    };
-    const TARGET_CHAIN_ID = 11155111;
-  </script>
+<script>
+  const INFURA_ID = "a70fd3de0ceb40ff848b3a20bc1df402";
+  const PLATFORM_WALLET = "0xa082E12865D934f77de1a44a72413Bd4bBB51adB".toLowerCase();
+  const NETWORKS = {
+    84531: { name: "Base Sepolia Testnet", chainId: 84531, rpc: `https://sepolia.base.org` },
+    8453: { name: "Base Mainnet", chainId: 8453, rpc: `https://mainnet.base.org` }
+  };
+  const TARGET_CHAIN_ID = 84531; // Default: Base Sepolia Testnet
+</script>
 
   <!-- MAIN SCRIPT -->
   <script src="main.js"></script>
@@ -187,5 +187,3 @@
   </script>
 </body>
 </html>
-
-
