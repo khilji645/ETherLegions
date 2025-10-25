@@ -57,6 +57,24 @@
     .nft-card button:hover {
       background-color: #45a049;
     }
+
+    /* Whitelist display list */
+    #whitelistList {
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-top: 10px;
+      background-color: #f0f0f0;
+      font-size: 14px;
+      list-style: none;
+    }
+    #whitelistList li {
+      padding: 4px 0;
+      border-bottom: 1px solid #ddd;
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -81,26 +99,26 @@
     </section>
 
     <!-- MINT SECTION -->
-<section class="mint">
-  <h2>Mint Your NFT</h2>
-  <div class="mint-box">
-    <input type="number" id="mintAmount" placeholder="Number of NFTs" min="1">
-    <div class="g-recaptcha" data-sitekey="6Lc7GPUrAAAAAGVFjI219WeeX7g4HxbIrFKvjiDw"></div>
-    <button id="mintBtn">Mint Now</button>
-  </div>
-  <p class="price-info">
-    Platform Fee: <strong>$3.00</strong> (≈ 0.00075 ETH at $4000/ETH) per NFT<br>
-    Total: <span id="totalPrice">0.000000</span> ETH (~$<span id="usdPrice">0.00</span>)
-  </p>
-</section>
+    <section class="mint">
+      <h2>Mint Your NFT</h2>
+      <div class="mint-box">
+        <input type="number" id="mintAmount" placeholder="Number of NFTs" min="1">
+        <div class="g-recaptcha" data-sitekey="6Lc7GPUrAAAAAGVFjI219WeeX7g4HxbIrFKvjiDw"></div>
+        <button id="mintBtn">Mint Now</button>
+      </div>
+      <p class="price-info">
+        Platform Fee: <strong>$3.00</strong> (≈ 0.00075 ETH at $4000/ETH) per NFT<br>
+        Total: <span id="totalPrice">0.000000</span> ETH (~$<span id="usdPrice">0.00</span>)
+      </p>
+    </section>
 
-<!-- USER'S MINTED NFT GRID -->
-<section class="user-nft-section">
-  <h2>Your Minted NFTs</h2>
-  <div id="userNftGrid" class="nft-grid">
-    <!-- User NFTs will be appended here dynamically -->
-  </div>
-</section>
+    <!-- USER'S MINTED NFT GRID -->
+    <section class="user-nft-section">
+      <h2>Your Minted NFTs</h2>
+      <div id="userNftGrid" class="nft-grid">
+        <!-- User NFTs will be appended here dynamically -->
+      </div>
+    </section>
 
     <!-- ADMIN PANEL -->
     <section class="admin" id="adminPanel" style="display:none;">
@@ -138,26 +156,25 @@
 
     <!-- WHITELIST + WITHDRAW -->
     <section class="panel-section" id="whitelistPanel" style="flex:1; display:none;">
-  <h2>Whitelist Management</h2>
-  <div class="panel-card">
-    <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
-    <div class="button-group">
-      <button id="addWhitelistBtn" class="admin-btn">Add to Whitelist</button>
-      <button id="removeWhitelistBtn" class="admin-btn">Remove from Whitelist</button>
-      <button id="addAllWhitelistBtn" class="admin-btn">Auto Upload Whitelist</button>
-    </div>
-    <p id="autoWhitelistProgress" style="margin-top:10px; font-weight:600;"></p>
-  </div>
-</section>
-
-      <section class="panel-section" id="withdrawPanel" style="flex:1; display:none;">
-        <h2>Withdraw Funds</h2>
-        <div class="panel-card">
-          <p><strong>Collected Fees:</strong> <span id="feesCollected">0.000000</span> ETH</p>
-          <button id="withdrawBtn" class="admin-btn">Withdraw Platform Fees</button>
+      <h2>Whitelist Management</h2>
+      <div class="panel-card">
+        <input type="text" id="whitelistAddress" placeholder="Enter addresses (comma separated)">
+        <div class="button-group">
+          <button id="addWhitelistBtn" class="admin-btn">Add to Whitelist</button>
+          <button id="removeWhitelistBtn" class="admin-btn">Remove from Whitelist</button>
+          <button id="addAllWhitelistBtn" class="admin-btn">Auto Upload Whitelist</button>
         </div>
-      </section>
-    </div>
+        <p id="autoWhitelistProgress" style="margin-top:10px; font-weight:600;"></p>
+      </div>
+    </section>
+
+    <section class="panel-section" id="withdrawPanel" style="flex:1; display:none;">
+      <h2>Withdraw Funds</h2>
+      <div class="panel-card">
+        <p><strong>Collected Fees:</strong> <span id="feesCollected">0.000000</span> ETH</p>
+        <button id="withdrawBtn" class="admin-btn">Withdraw Platform Fees</button>
+      </div>
+    </section>
 
     <!-- SALE STATUS -->
     <section class="panel-section full-width">
@@ -167,7 +184,7 @@
       </div>
     </section>
 
-    <!-- WHITELIST CHECKER -->
+    <!-- WHITELIST CHECKER + DISPLAY -->
     <section class="whitelist-display" id="whitelistDisplaySection" style="margin-top:30px;">
       <h2>Check Whitelist Status</h2>
       <div class="whitelist-search-container">
@@ -175,6 +192,10 @@
         <button id="whitelistSearchBtn">Check</button>
       </div>
       <p id="whitelistResult" style="font-weight:600; margin-top:10px;"></p>
+      <h3>All Whitelisted Addresses</h3>
+      <ul id="whitelistList">
+        <li>Loading whitelist...</li>
+      </ul>
     </section>
 
     <div id="message"></div>
