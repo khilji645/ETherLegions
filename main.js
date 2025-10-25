@@ -1231,21 +1231,27 @@ async function mintNFTs() {
         const value = ethers.parseEther(totalFeeETH.toString());
         const tx = await contract.mint(amount, { value });
         messageEl.innerText = "Transaction sent... waiting for confirmation";
+
         const receipt = await tx.wait();
         messageEl.innerText = "Mint successful!";
-
         userMintedAmount += amount;
         grecaptcha.reset();
 
-        // Automatically add minted NFTs to MetaMask and display for user
+        // Fetch newly minted token IDs
         const totalMintedNow = Number(await contract.totalMinted());
-        for (let i = 0; i < amount; i++) {
-            const newTokenId = totalMintedNow - amount + i + 1;
-            const tokenURI = await contract.tokenURI(newTokenId).catch(() => null);
-            if (!tokenURI) continue;
+        const startId = totalMintedNow - amount + 1;
 
-            await addNFTtoMetaMask(newTokenId, tokenURI);
-            await displayNFTForUser(newTokenId, tokenURI);
+        for (let i = 0; i < amount; i++) {
+            const tokenId = startId + i;
+            let tokenURI = "";
+            try { tokenURI = await contract.tokenURI(tokenId); } catch(e) { continue; }
+
+            // Only display if user owns the token
+            const owner = (await contract.ownerOf(tokenId)).toLowerCase();
+            if (owner === userAddress) {
+                await displayNFTForUser(tokenId, tokenURI);
+                await addNFTtoMetaMask(tokenId, tokenURI);
+            }
         }
 
         await refreshAll();
@@ -1254,7 +1260,6 @@ async function mintNFTs() {
         messageEl.innerText = "Mint failed: " + (err.reason || err.message);
     }
 }
-
 // ---------------------------
 // Add NFT to MetaMask
 // ---------------------------
@@ -1304,20 +1309,12 @@ async function addNFTtoMetaMask(tokenId, tokenURI) {
 // Display NFT only for connected user
 // ---------------------------
 async function displayNFTForUser(tokenId, tokenURI) {
-    const nftGrid = document.getElementById("userNftGrid"); // <-- use userNftGrid
-    if (!nftGrid || !contract || !userAddress) return;
-
-    let owner;
-    try {
-        owner = await contract.ownerOf(tokenId);
-        owner = owner.toLowerCase();
-    } catch (err) {
-        console.warn("Failed to fetch owner for token", tokenId, err);
-        return;
-    }
-    if (owner !== userAddress) return;
+    const nftGrid = document.getElementById("userNftGrid");
+    if (!nftGrid || !tokenId || !tokenURI) return;
 
     let imageURI = tokenURI;
+
+    // Fetch metadata if JSON
     if (tokenURI.endsWith(".json") || tokenURI.includes(".json")) {
         try {
             const response = await fetch(tokenURI);
@@ -1328,7 +1325,9 @@ async function displayNFTForUser(tokenId, tokenURI) {
                     imageURI = imageURI.replace("ipfs://", "https://ipfs.io/ipfs/");
                 }
             }
-        } catch (err) { console.warn("Failed to fetch metadata for user NFT", tokenId, err); }
+        } catch (err) {
+            console.warn("Failed to fetch metadata for NFT", tokenId, err);
+        }
     } else if (tokenURI.startsWith("ipfs://")) {
         imageURI = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
     }
@@ -1343,37 +1342,38 @@ async function displayNFTForUser(tokenId, tokenURI) {
 // Display only user's minted NFTs
 // ---------------------------
 async function displayMintedNFTs() {
-    const nftGrid = document.getElementById("userNftGrid"); // <-- use userNftGrid
+    const nftGrid = document.getElementById("userNftGrid");
     if (!nftGrid || !contract || !userAddress) return;
-    nftGrid.innerHTML = "";
+    nftGrid.innerHTML = ""; // Clear previous
 
     try {
         const totalMintedBN = await contract.totalMinted();
         const totalMinted = Number(totalMintedBN || 0);
 
-        for (let i = 0; i < totalMinted; i++) {
-            const tokenId = i + 1;
-            let owner;
-            try {
-                owner = await contract.ownerOf(tokenId);
-                owner = owner.toLowerCase();
-            } catch (err) {
-                continue;
-            }
-            if (owner !== userAddress) continue;
+        if (totalMinted === 0) return;
 
-            let tokenURI;
-            if (typeof contract.tokenURI === "function") {
-                tokenURI = await contract.tokenURI(tokenId);
-            } else if (typeof contract.tokenURIs === "function") {
-                tokenURI = await contract.tokenURIs(i);
+        // Only fetch tokens owned by connected user
+        const userTokenIds = [];
+        for (let tokenId = 1; tokenId <= totalMinted; tokenId++) {
+            try {
+                const owner = (await contract.ownerOf(tokenId)).toLowerCase();
+                if (owner === userAddress) userTokenIds.push(tokenId);
+            } catch (e) {
+                continue; // Skip invalid tokens
             }
-            if (!tokenURI) continue;
+        }
+
+        // Fetch and display metadata for each NFT
+        for (const tokenId of userTokenIds) {
+            let tokenURI = "";
+            try {
+                tokenURI = await contract.tokenURI(tokenId);
+            } catch (e) { continue; }
 
             await displayNFTForUser(tokenId, tokenURI);
         }
-    } catch (e) {
-        console.error("displayMintedNFTs error:", e);
+    } catch (err) {
+        console.error("displayMintedNFTs error:", err);
     }
 }
 
