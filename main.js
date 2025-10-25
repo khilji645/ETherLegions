@@ -1376,6 +1376,54 @@ async function displayMintedNFTs() {
         console.error("displayMintedNFTs error:", err);
     }
 }
+// ---------------------------
+// Admin functions
+// ---------------------------
+async function pauseMint(){ if(contract){ await contract.pause(); messageEl.innerText="Mint paused ✅"; await refreshAll(); } }
+async function resumeMint(){ if(contract){ await contract.resume(); messageEl.innerText="Mint resumed ✅"; await refreshAll(); } }
+async function startWhitelist(){ if(contract){ await contract.setWhitelistSale(true); await contract.setPublicSale(false); messageEl.innerText="Whitelist sale started ✅"; await refreshAll(); } }
+async function stopWhitelist(){ if(contract){ await contract.setWhitelistSale(false); messageEl.innerText="Whitelist sale stopped 🛑"; await refreshAll(); } }
+async function startPublic(){ if(contract){ await contract.setPublicSale(true); await contract.setWhitelistSale(false); messageEl.innerText="Public sale started ✅"; await refreshAll(); } }
+async function stopPublic(){ if(contract){ await contract.setPublicSale(false); messageEl.innerText="Public sale stopped 🛑"; await refreshAll(); } }
+
+async function addWhitelist() {
+    if(userAddress !== PLATFORM_WALLET) return;
+    if(!whitelistAddressInput || !contract) return;
+    const addresses = whitelistAddressInput.value.split(",").map(a=>a.trim()).filter(a=>a);
+    if(addresses.length===0){ messageEl.innerText="No addresses provided"; return; }
+    await contract.addWhitelist(addresses);
+    whitelistAddressInput.value="";
+    messageEl.innerText="Added to whitelist ✅";
+    await refreshAll();
+}
+
+async function removeWhitelist() {
+    if(userAddress !== PLATFORM_WALLET) return;
+    if(!whitelistAddressInput || !contract) return;
+    const addresses = whitelistAddressInput.value.split(",").map(a=>a.trim()).filter(a=>a);
+    if(addresses.length===0){ messageEl.innerText="No addresses provided"; return; }
+    await contract.removeWhitelist(addresses);
+    whitelistAddressInput.value="";
+    messageEl.innerText="Removed from whitelist ✅";
+    await refreshAll();
+}
+
+async function withdrawFunds() {
+    if(userAddress !== PLATFORM_WALLET) return;
+    if(!contract) return;
+    try {
+        const balance = await provider.getBalance(CONTRACT_ADDRESS);
+        if(Number(balance)<=0){ messageEl.innerText="No funds to withdraw ❌"; return; }
+        const tx = await contract.withdrawFunds();
+        messageEl.innerText="Withdrawal sent... awaiting confirmation ⏳";
+        await tx.wait();
+        messageEl.innerText="Platform fees withdrawn ✅";
+        await refreshAll();
+    } catch(err){
+        console.error("withdrawFunds error:", err);
+        messageEl.innerText="Withdrawal failed: "+(err.reason||err.message||err);
+    }
+}
 
 
 // ---------------------------
@@ -1479,5 +1527,6 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // On load
 // ---------------------------
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
 
 
