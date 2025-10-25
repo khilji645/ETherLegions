@@ -81,23 +81,26 @@
     </section>
 
     <!-- MINT SECTION -->
-    <section class="mint">
-      <h2>Mint Your NFT</h2>
-      <div class="mint-box">
-        <input type="number" id="mintAmount" placeholder="Number of NFTs" min="1">
-        <div class="g-recaptcha" data-sitekey="6Lc7GPUrAAAAAGVFjI219WeeX7g4HxbIrFKvjiDw"></div>
-        <button id="mintBtn">Mint Now</button>
-      </div>
-      <p class="price-info">
-        Platform Fee: <strong>$3.00</strong> (≈ 0.00075 ETH at $4000/ETH) per NFT<br>
-        Total: <span id="totalPrice">0.000000</span> ETH (~$<span id="usdPrice">0.00</span>)
-      </p>
-    </section>
+<section class="mint">
+  <h2>Mint Your NFT</h2>
+  <div class="mint-box">
+    <input type="number" id="mintAmount" placeholder="Number of NFTs" min="1">
+    <div class="g-recaptcha" data-sitekey="6Lc7GPUrAAAAAGVFjI219WeeX7g4HxbIrFKvjiDw"></div>
+    <button id="mintBtn">Mint Now</button>
+  </div>
+  <p class="price-info">
+    Platform Fee: <strong>$3.00</strong> (≈ 0.00075 ETH at $4000/ETH) per NFT<br>
+    Total: <span id="totalPrice">0.000000</span> ETH (~$<span id="usdPrice">0.00</span>)
+  </p>
+</section>
 
-    <!-- USER'S MINTED NFT GRID -->
-    <section id="userNftGrid" class="nft-grid">
-      <h2>Your Minted NFTs</h2>
-    </section>
+<!-- USER'S MINTED NFT GRID -->
+<section class="user-nft-section">
+  <h2>Your Minted NFTs</h2>
+  <div id="userNftGrid" class="nft-grid">
+    <!-- User NFTs will be appended here dynamically -->
+  </div>
+</section>
 
     <!-- ADMIN PANEL -->
     <section class="admin" id="adminPanel" style="display:none;">
