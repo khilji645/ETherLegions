@@ -94,8 +94,10 @@
       </p>
     </section>
 
-    <!-- NFT GRID -->
-    <section id="nftGrid" class="nft-grid"></section>
+    <!-- USER'S MINTED NFT GRID -->
+    <section id="userNftGrid" class="nft-grid">
+      <h2>Your Minted NFTs</h2>
+    </section>
 
     <!-- ADMIN PANEL -->
     <section class="admin" id="adminPanel" style="display:none;">
@@ -187,64 +189,53 @@
 
   <!-- MAIN SCRIPT -->
   <script>
-    async function displayMintedNFTs() {
-        const nftGrid = document.getElementById("nftGrid");
-        if (!nftGrid) return;
-        nftGrid.innerHTML = "";
-        if (!contract) return;
+    async function displayUserMintedNFTs() {
+        const nftGrid = document.getElementById("userNftGrid");
+        if (!nftGrid || !userAddress || !contract) return;
+        nftGrid.innerHTML = ""; // clear previous
 
         try {
             const totalMintedBN = await contract.totalMinted();
             const totalMinted = Number(totalMintedBN || 0);
 
             for (let i = 0; i < totalMinted; i++) {
+                let owner;
                 try {
-                    let tokenURI;
-                    if (typeof contract.tokenURI === "function") {
-                        tokenURI = await contract.tokenURI(i + 1);
-                    } else if (typeof contract.tokenURIs === "function") {
-                        tokenURI = await contract.tokenURIs(i);
-                    }
-                    if (!tokenURI) continue;
+                    owner = await contract.ownerOf(i + 1);
+                    if (owner.toLowerCase() !== userAddress) continue;
+                } catch(e){ continue; }
 
-                    let imageURI = tokenURI;
-
-                    // Fetch JSON metadata if present
-                    if (tokenURI.endsWith(".json") || tokenURI.includes(".json")) {
-                        try {
-                            const response = await fetch(tokenURI);
-                            const metadata = await response.json();
-                            if (metadata.image) {
-                                imageURI = metadata.image;
-                                if (imageURI.startsWith("ipfs://")) {
-                                    imageURI = imageURI.replace("ipfs://", "https://ipfs.io/ipfs/");
-                                }
-                            }
-                        } catch (err) {
-                            console.warn("Failed to fetch metadata for token", i + 1, err);
-                        }
-                    } else if (tokenURI.startsWith("ipfs://")) {
-                        imageURI = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
-                    }
-
-                    // Display NFT in grid
-                    const div = document.createElement("div");
-                    div.classList.add("nft-card");
-                    div.innerHTML = `<img src="${imageURI}" alt="NFT ${i + 1}" style="width:200px; height:auto;"><p>ID: ${i + 1}</p>`;
-                    nftGrid.appendChild(div);
-
-                    // Auto add NFT to MetaMask
-                    if (window.ethereum && window.addNFTtoMetaMask) {
-                        window.addNFTtoMetaMask(i + 1, tokenURI);
-                    }
-
-                } catch (e) {
-                    console.warn("Error displaying NFT", i + 1, e);
-                    continue;
+                let tokenURI;
+                if (typeof contract.tokenURI === "function") {
+                    tokenURI = await contract.tokenURI(i + 1);
+                } else if (typeof contract.tokenURIs === "function") {
+                    tokenURI = await contract.tokenURIs(i);
                 }
+                if (!tokenURI) continue;
+
+                let imageURI = tokenURI;
+                if (tokenURI.endsWith(".json") || tokenURI.includes(".json")) {
+                    try {
+                        const response = await fetch(tokenURI);
+                        const metadata = await response.json();
+                        if (metadata.image) {
+                            imageURI = metadata.image;
+                            if (imageURI.startsWith("ipfs://")) {
+                                imageURI = imageURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+                            }
+                        }
+                    } catch (err) { continue; }
+                } else if (tokenURI.startsWith("ipfs://")) {
+                    imageURI = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+                }
+
+                const div = document.createElement("div");
+                div.classList.add("nft-card");
+                div.innerHTML = `<img src="${imageURI}" alt="NFT ${i+1}" style="width:200px; height:auto;"><p>ID: ${i+1}</p>`;
+                nftGrid.appendChild(div);
             }
-        } catch (e) {
-            console.error("displayMintedNFTs error:", e);
+        } catch(e) {
+            console.error("displayUserMintedNFTs error:", e);
         }
     }
   </script>
