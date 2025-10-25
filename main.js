@@ -1071,7 +1071,6 @@ function initWeb3Modal() {
 
 let provider, signer, userAddress, contract;
 
-
 // ---------------------------
 // Connect Wallet
 // ---------------------------
@@ -1145,6 +1144,7 @@ async function refreshAll() {
         showSaleStatus()
     ]);
 }
+
 // ---------------------------
 // Update stats
 // ---------------------------
@@ -1170,10 +1170,10 @@ async function updateStats() {
             feesCollected = Number(ethers.formatEther(balance));
         }
 
-        if (document.getElementById("totalSupply")) document.getElementById("totalSupply").innerText = totalSupply;
-        if (document.getElementById("minted")) document.getElementById("minted").innerText = minted;
-        if (document.getElementById("remaining")) document.getElementById("remaining").innerText = remaining;
-        if (document.getElementById("feesCollected")) document.getElementById("feesCollected").innerText = feesCollected.toFixed(6);
+        if (totalSupplyEl) totalSupplyEl.innerText = totalSupply;
+        if (mintedEl) mintedEl.innerText = minted;
+        if (remainingEl) remainingEl.innerText = remaining;
+        if (feesCollectedEl) feesCollectedEl.innerText = feesCollected.toFixed(6);
     } catch(err) {
         console.error("updateStats error:", err);
     }
@@ -1196,12 +1196,14 @@ async function updatePrice() {
     const totalETH = platformCost + estimatedGasFeeETH;
     const totalUSD = totalETH * ethPriceUSD;
 
-    totalPriceEl.innerHTML = `
-        Platform Fee: ${platformCost.toFixed(6)} ETH<br>
-        Est. Gas Fee: ${estimatedGasFeeETH.toFixed(6)} ETH<br>
-        <strong>Total: ${totalETH.toFixed(6)} ETH</strong>
-    `;
-    usdPriceEl.innerHTML = `≈ $${totalUSD.toFixed(2)} USD`;
+    if (totalPriceEl)
+        totalPriceEl.innerHTML = `
+            Platform Fee: ${platformCost.toFixed(6)} ETH<br>
+            Est. Gas Fee: ${estimatedGasFeeETH.toFixed(6)} ETH<br>
+            <strong>Total: ${totalETH.toFixed(6)} ETH</strong>
+        `;
+    if (usdPriceEl)
+        usdPriceEl.innerHTML = `≈ $${totalUSD.toFixed(2)} USD`;
 }
 
 // ---------------------------
@@ -1251,26 +1253,38 @@ async function displayMintedNFTs() {
     if (!nftGrid) return;
     nftGrid.innerHTML = "";
     if (!contract) return;
+
     try {
         const totalMintedBN = await contract.totalMinted();
         const totalMinted = Number(totalMintedBN || 0);
+
         for (let i = 0; i < totalMinted; i++) {
+            let uri = null;
             try {
-                let uri;
                 if (typeof contract.tokenURI === "function") {
-                    try { uri = await contract.tokenURI(i+1); }
-                    catch(e){ uri = await contract.tokenURIs(i).catch(()=>null); }
-                } else {
-                    uri = await contract.tokenURIs(i).catch(()=>null);
+                    uri = await contract.tokenURI(i + 1).catch(() => null);
+                } else if (typeof contract.tokenURIs === "function") {
+                    uri = await contract.tokenURIs(i).catch(() => null);
                 }
-                if (!uri) continue;
-                const div = document.createElement("div");
-                div.classList.add("nft-card");
-                div.innerHTML = `<img src="${uri}" alt="NFT ${i+1}"><p>ID: ${i+1}</p>`;
-                nftGrid.appendChild(div);
-            } catch(e){ break; }
+            } catch (e) {
+                console.warn(`Failed to fetch token URI for token ${i+1}:`, e);
+                continue;
+            }
+
+            if (!uri) continue;
+            // Handle ipfs:// URIs
+            if (uri.startsWith("ipfs://")) {
+                uri = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+            }
+
+            const div = document.createElement("div");
+            div.classList.add("nft-card");
+            div.innerHTML = `<img src="${uri}" alt="NFT ${i+1}"><p>ID: ${i+1}</p>`;
+            nftGrid.appendChild(div);
         }
-    } catch(e){ console.error("displayMintedNFTs error:", e); }
+    } catch (e) {
+        console.error("displayMintedNFTs error:", e);
+    }
 }
 
 // ---------------------------
@@ -1423,6 +1437,8 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // On load
 // ---------------------------
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
+
 
 
 
