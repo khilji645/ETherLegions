@@ -1022,7 +1022,6 @@ const ABI =[
 
 
 
-
 let ethPriceUSD = 3900;
 let FALLBACK_TOTAL_SUPPLY = 2221;
 const MAX_MINT_PER_USER = 20; // Max per user
@@ -1475,4 +1474,5 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // On load
 // ---------------------------
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
 
