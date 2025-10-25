@@ -1,4 +1,4 @@
-const CONTRACT_ADDRESS = "0xC04FA85a5327046138Dc437b279021bbcaDc267f"; 
+const CONTRACT_ADDRESS = "0x856fAC9F7ff3f0E9D5fe8F5DB0102A8e8A4e381A"; 
 const ABI =[
 	{
 		"inputs": [
@@ -41,11 +41,6 @@ const ABI =[
 			{
 				"internalType": "address payable",
 				"name": "_platformWallet",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "_priceFeedAddress",
 				"type": "address"
 			}
 		],
@@ -700,19 +695,6 @@ const ABI =[
 	},
 	{
 		"inputs": [],
-		"name": "getLatestPrice",
-		"outputs": [
-			{
-				"internalType": "int256",
-				"name": "",
-				"type": "int256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "getPlatformFeeInWei",
 		"outputs": [
 			{
@@ -721,7 +703,7 @@ const ABI =[
 				"type": "uint256"
 			}
 		],
-		"stateMutability": "view",
+		"stateMutability": "pure",
 		"type": "function"
 	},
 	{
@@ -1019,10 +1001,10 @@ const ABI =[
 		"type": "function"
 	}
 ]
-
 let ethPriceUSD = 3900;
 let FALLBACK_TOTAL_SUPPLY = 2221;
 const MAX_MINT_PER_USER = 20; // Max per user
+const FIXED_PLATFORM_FEE_ETH = 0.0007699; // $3 at $3900/ETH
 
 // Elements
 const connectWalletBtn = document.getElementById("connectWallet");
@@ -1052,7 +1034,7 @@ const whitelistAddressInput = document.getElementById("whitelistAddress");
 let userMintedAmount = 0;
 
 // ---------------------------
-// Web3Modal init (Mobile + Desktop)
+// Web3Modal init
 // ---------------------------
 let web3Modal;
 function initWeb3Modal() {
@@ -1062,8 +1044,8 @@ function initWeb3Modal() {
             package: window.WalletConnectProvider?.default || window.WalletConnectProvider,
             options: {
                 rpc: {
-                    84531: NETWORKS[84531].rpc, // Base Sepolia
-                    8453: NETWORKS[8453].rpc    // Base Mainnet
+                    84531: NETWORKS[84531].rpc,
+                    8453: NETWORKS[8453].rpc
                 },
                 qrcode: true,
                 bridge: "https://bridge.walletconnect.org"
@@ -1087,14 +1069,10 @@ function initWeb3Modal() {
     });
 }
 
-
-// ---------------------------
-// Global variables
-// ---------------------------
 let provider, signer, userAddress, contract;
 
 // ---------------------------
-// Connect Wallet Function
+// Connect Wallet
 // ---------------------------
 async function connectWallet() {
     try {
@@ -1110,16 +1088,16 @@ async function connectWallet() {
         window.signer = signer;
 
         const network = await provider.getNetwork();
-if (network.chainId !== TARGET_CHAIN_ID) {
-    try {
-        await instance.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: `0x${TARGET_CHAIN_ID.toString(16)}` }]
-        });
-    } catch (switchError) {
-        console.warn(`Switch network to ${NETWORKS[TARGET_CHAIN_ID].name} manually.`, switchError);
-    }
-}
+        if (network.chainId !== TARGET_CHAIN_ID) {
+            try {
+                await instance.request({
+                    method: "wallet_switchEthereumChain",
+                    params: [{ chainId: `0x${TARGET_CHAIN_ID.toString(16)}` }]
+                });
+            } catch (switchError) {
+                console.warn(`Switch network to ${NETWORKS[TARGET_CHAIN_ID].name} manually.`, switchError);
+            }
+        }
 
         if (connectWalletBtn)
             connectWalletBtn.innerText = `Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
@@ -1155,26 +1133,7 @@ if (network.chainId !== TARGET_CHAIN_ID) {
 }
 
 // ---------------------------
-// Helper: get total supply
-// ---------------------------
-async function getTotalSupplyFromContract() {
-    if (!contract) return FALLBACK_TOTAL_SUPPLY;
-    try { if (typeof contract.tokenURIsLength === "function") return Number(await contract.tokenURIsLength()); } catch(e){}
-    try { if (typeof contract.MAX_SUPPLY === "function") return Number(await contract.MAX_SUPPLY()); } catch(e){}
-    try {
-        if (typeof contract.tokenURIs === "function") {
-            let count = 0;
-            for (let i=0; i<1000; i++) {
-                try { const uri = await contract.tokenURIs(i); if(!uri) break; count++; } catch(e){ break; }
-            }
-            if (count>0) return count;
-        }
-    } catch(e){}
-    return FALLBACK_TOTAL_SUPPLY;
-}
-
-// ---------------------------
-// Global refresh
+// Refresh Data
 // ---------------------------
 async function refreshAll() {
     await Promise.all([
@@ -1187,98 +1146,46 @@ async function refreshAll() {
 }
 
 // ---------------------------
-// Stats update
-// ---------------------------
-async function updateStats() {
-    try {
-        if (!contract) return;
-        const totalMintedBN = await contract.totalMinted().catch(() => 0);
-        const totalMinted = Number(totalMintedBN || 0);
-        const totalSupply = await getTotalSupplyFromContract();
-
-        mintedEl.innerText = totalMinted;
-        remainingEl.innerText = Math.max(0, totalSupply - totalMinted);
-
-        const totalSupplyEl = document.getElementById("totalSupply");
-        if (totalSupplyEl) totalSupplyEl.innerText = totalSupply;
-
-        let fees = 0;
-        try {
-            if (typeof contract.totalPlatformFeesCollected === "function") {
-                const feesBN = await contract.totalPlatformFeesCollected();
-                fees = Number(ethers.formatEther(feesBN || 0));
-            }
-            if (fees === 0) {
-                const balance = await provider.getBalance(CONTRACT_ADDRESS);
-                fees = Number(ethers.formatEther(balance || 0));
-            }
-        } catch(e){ fees = 0; }
-
-        feesCollectedEl.innerText = fees.toFixed(6);
-    } catch(err) {
-        console.error("updateStats error:", err);
-        if (feesCollectedEl) feesCollectedEl.innerText = "0.000000";
-    }
-}
-
-// ---------------------------
-// Update price
+// Update Price (Fixed Fee)
 // ---------------------------
 async function updatePrice() {
     if (!mintAmountInput) return;
     const amount = parseInt(mintAmountInput.value) || 0;
-    if (!contract || amount <= 0) {
+    if (amount <= 0) {
         if (totalPriceEl) totalPriceEl.innerText = "0.000000";
         if (usdPriceEl) usdPriceEl.innerText = "0.00";
         return;
     }
-    try {
-        const platformFeeETHBN = await contract.getPlatformFeeInWei();
-        const feeETH = Number(ethers.formatEther(platformFeeETHBN));
-        const platformCost = amount * feeETH;
-        const estimatedGasFeeETH = 0.0004 * amount;
-        const totalETH = platformCost + estimatedGasFeeETH;
-        const totalUSD = totalETH * ethPriceUSD;
 
-        totalPriceEl.innerHTML = `
-            Platform Fee: ${platformCost.toFixed(6)} ETH<br>
-            Est. Gas Fee: ${estimatedGasFeeETH.toFixed(6)} ETH<br>
-            <strong>Total: ${totalETH.toFixed(6)} ETH</strong>
-        `;
-        usdPriceEl.innerHTML = `≈ $${totalUSD.toFixed(2)} USD`;
-    } catch(err) { console.error("Failed to fetch platform fee: ", err); }
+    const platformCost = amount * FIXED_PLATFORM_FEE_ETH;
+    const estimatedGasFeeETH = 0.0004 * amount;
+    const totalETH = platformCost + estimatedGasFeeETH;
+    const totalUSD = totalETH * ethPriceUSD;
+
+    totalPriceEl.innerHTML = `
+        Platform Fee: ${platformCost.toFixed(6)} ETH<br>
+        Est. Gas Fee: ${estimatedGasFeeETH.toFixed(6)} ETH<br>
+        <strong>Total: ${totalETH.toFixed(6)} ETH</strong>
+    `;
+    usdPriceEl.innerHTML = `≈ $${totalUSD.toFixed(2)} USD`;
 }
 
 // ---------------------------
-// Mint NFTs with max limit and CAPTCHA
+// Mint NFTs (Fixed Fee)
 // ---------------------------
-async function ensureBaseNetwork() {
-  const provider = window.ethereum;
-  const currentChainId = await provider.request({ method: 'eth_chainId' });
-  if (parseInt(currentChainId, 16) !== TARGET_CHAIN_ID) {
-    await provider.request({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: '0x2105' }], // 8453 in hex
-    });
-  }
-}
-
 async function mintNFTs() {
     if (messageEl) messageEl.innerText = "";
-    if (!mintAmountInput) return;
     const amount = parseInt(mintAmountInput.value);
     if (!amount || amount <= 0) {
         messageEl.innerText = "Enter a valid number of NFTs";
         return;
     }
 
-    // Max per user check
     if ((userMintedAmount + amount) > MAX_MINT_PER_USER) {
         messageEl.innerText = `You can only mint up to ${MAX_MINT_PER_USER} NFTs. You have already minted ${userMintedAmount}.`;
         return;
     }
 
-    // CAPTCHA check
     const captchaResponse = grecaptcha.getResponse();
     if (!captchaResponse) {
         messageEl.innerText = "Please complete the CAPTCHA to proceed.";
@@ -1286,9 +1193,8 @@ async function mintNFTs() {
     }
 
     try {
-        const platformFeeETHBN = await contract.getPlatformFeeInWei();
-        const feeETH = Number(ethers.formatEther(platformFeeETHBN));
-        const value = ethers.parseEther((amount * feeETH).toString());
+        const totalFeeETH = FIXED_PLATFORM_FEE_ETH * amount;
+        const value = ethers.parseEther(totalFeeETH.toString());
         const tx = await contract.mint(amount, { value });
         messageEl.innerText = "Transaction sent... waiting for confirmation";
         await tx.wait();
@@ -1303,6 +1209,14 @@ async function mintNFTs() {
         messageEl.innerText = "Mint failed: " + (err.reason || err.message);
     }
 }
+
+
+
+// Event listeners
+
+
+
+
 
 // ---------------------------
 // Display NFTs
@@ -1483,6 +1397,7 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // On load
 // ---------------------------
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
 
 
 
