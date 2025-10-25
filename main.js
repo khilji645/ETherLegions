@@ -1,4 +1,4 @@
-const CONTRACT_ADDRESS = "0xf438A50B25Bf8940bA5FCe3b31da1C2823Ec45fE"; 
+const CONTRACT_ADDRESS = "0x98FdC1A22f528DBce5F72507D18A9eD4b72f73C8"; 
 const ABI =[
 	{
 		"inputs": [
@@ -1472,6 +1472,7 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // On load
 // ---------------------------
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
 
 
 
