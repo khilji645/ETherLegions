@@ -1237,17 +1237,15 @@ async function mintNFTs() {
         userMintedAmount += amount;
         grecaptcha.reset();
 
-        // Automatically add minted NFTs to MetaMask and display on page
+        // Automatically add minted NFTs to MetaMask and display for user
         const totalMintedNow = Number(await contract.totalMinted());
         for (let i = 0; i < amount; i++) {
             const newTokenId = totalMintedNow - amount + i + 1;
             const tokenURI = await contract.tokenURI(newTokenId).catch(() => null);
             if (!tokenURI) continue;
 
-            addNFTtoMetaMask(newTokenId, tokenURI);
-
-            // Display NFT immediately for the user
-            displayNFTForUser(newTokenId, tokenURI);
+            await addNFTtoMetaMask(newTokenId, tokenURI);
+            await displayNFTForUser(newTokenId, tokenURI);
         }
 
         await refreshAll();
@@ -1258,12 +1256,57 @@ async function mintNFTs() {
 }
 
 // ---------------------------
+// Add NFT to MetaMask
+// ---------------------------
+async function addNFTtoMetaMask(tokenId, tokenURI) {
+    if (!window.ethereum || !tokenId || !tokenURI) return;
+    try {
+        let imageURI = tokenURI;
+
+        if (tokenURI.endsWith(".json") || tokenURI.includes(".json")) {
+            try {
+                const response = await fetch(tokenURI);
+                const metadata = await response.json();
+                if (metadata.image) {
+                    imageURI = metadata.image;
+                    if (imageURI.startsWith("ipfs://")) {
+                        imageURI = imageURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+                    }
+                }
+            } catch (err) {
+                console.warn("Failed to fetch metadata for MetaMask", tokenId, err);
+            }
+        } else if (tokenURI.startsWith("ipfs://")) {
+            imageURI = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+        }
+
+        await window.ethereum.request({
+            method: 'wallet_watchAsset',
+            params: {
+                type: 'ERC721',
+                options: {
+                    address: CONTRACT_ADDRESS,
+                    symbol: 'ELG',
+                    decimals: 0,
+                    image: imageURI,
+                    tokenId: tokenId.toString()
+                }
+            }
+        });
+
+        console.log(`NFT ${tokenId} added to MetaMask with image ${imageURI}`);
+    } catch (err) {
+        console.warn("Failed to add NFT to MetaMask:", err);
+    }
+}
+
+// ---------------------------
 // Display NFT only for connected user
 // ---------------------------
 async function displayNFTForUser(tokenId, tokenURI) {
+    const nftGrid = document.getElementById("userNftGrid"); // <-- use userNftGrid
     if (!nftGrid || !contract || !userAddress) return;
 
-    // Check owner
     let owner;
     try {
         owner = await contract.ownerOf(tokenId);
@@ -1300,6 +1343,7 @@ async function displayNFTForUser(tokenId, tokenURI) {
 // Display only user's minted NFTs
 // ---------------------------
 async function displayMintedNFTs() {
+    const nftGrid = document.getElementById("userNftGrid"); // <-- use userNftGrid
     if (!nftGrid || !contract || !userAddress) return;
     nftGrid.innerHTML = "";
 
@@ -1326,7 +1370,7 @@ async function displayMintedNFTs() {
             }
             if (!tokenURI) continue;
 
-            displayNFTForUser(tokenId, tokenURI);
+            await displayNFTForUser(tokenId, tokenURI);
         }
     } catch (e) {
         console.error("displayMintedNFTs error:", e);
