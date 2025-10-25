@@ -1030,6 +1030,7 @@ const removeWhitelistBtn = document.getElementById("removeWhitelistBtn");
 const addAllWhitelistBtn = document.getElementById("addAllWhitelistBtn"); 
 const withdrawBtn = document.getElementById("withdrawBtn");
 const whitelistAddressInput = document.getElementById("whitelistAddress");
+const whitelistDisplaySection = document.getElementById("whitelistDisplaySection");
 
 // Track user's minted amount
 let userMintedAmount = 0;
@@ -1373,13 +1374,27 @@ async function withdrawFunds() {
 }
 
 // ---------------------------
-// Show whitelist
+// Show whitelist (Updated for display under checker)
 async function showWhitelist() {
     if(!contract) return;
-    const whitelistList = document.getElementById("whitelistList");
-    if(!whitelistList) return;
-    whitelistList.innerHTML="";
-    let addresses=[];
+    if(!whitelistDisplaySection) return;
+
+    // Remove old list if exists
+    let container = document.getElementById("whitelistFullList");
+    if(container) container.remove();
+
+    // Create container
+    container = document.createElement("div");
+    container.id = "whitelistFullList";
+    container.style.maxHeight = "200px";
+    container.style.overflowY = "auto";
+    container.style.marginTop = "10px";
+    container.style.border = "1px solid #ccc";
+    container.style.padding = "8px";
+    container.style.borderRadius = "6px";
+    container.style.backgroundColor = "#f9f9f9";
+
+    let addresses = [];
     try{
         if(typeof contract.whitelistAddresses==="function"){
             let idx=0;
@@ -1392,18 +1407,26 @@ async function showWhitelist() {
                 }catch(e){ break; }
             }
         }
-    }catch(e){ console.error("showWhitelist error:",e);}
+    }catch(e){ console.error("showWhitelist error:",e); }
+
     if(addresses.length===0){
-        const li=document.createElement("li");
-        li.innerText="No whitelisted addresses yet.";
-        whitelistList.appendChild(li);
-        return;
+        container.innerText = "No whitelisted addresses yet.";
+    } else {
+        addresses.forEach(addr=>{
+            const p = document.createElement("p");
+            p.innerText = addr;
+            p.style.cursor = "pointer";
+            p.style.margin = "2px 0";
+            p.title = "Click to copy";
+            p.addEventListener("click", ()=>{ 
+                navigator.clipboard.writeText(addr);
+                messageEl.innerText = `Address copied: ${addr}`;
+            });
+            container.appendChild(p);
+        });
     }
-    for(const a of addresses){
-        const li=document.createElement("li");
-        li.innerText=a;
-        whitelistList.appendChild(li);
-    }
+
+    whitelistDisplaySection.appendChild(container);
 }
 
 // ---------------------------
@@ -1467,6 +1490,7 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // ---------------------------
 // On load
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
 
 
 
