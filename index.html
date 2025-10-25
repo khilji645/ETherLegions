@@ -47,8 +47,8 @@
         <button id="mintBtn">Mint Now</button>
       </div>
       <p class="price-info">
-        Total Price (incl. Gas + Platform Fee): 
-        <span id="totalPrice">0</span> ETH (~$<span id="usdPrice">0</span>)
+        Platform Fee: <strong>$3.00</strong> (≈ 0.00075 ETH at $4000/ETH) per NFT<br>
+        Total: <span id="totalPrice">0.000000</span> ETH (~$<span id="usdPrice">0.00</span>)
       </p>
     </section>
 
@@ -140,7 +140,10 @@
     84531: { name: "Base Sepolia Testnet", chainId: 84531, rpc: `https://sepolia.base.org` },
     8453: { name: "Base Mainnet", chainId: 8453, rpc: `https://mainnet.base.org` }
   };
-  const TARGET_CHAIN_ID = 8453; // Switch from Sepolia to Base Mainnet
+  const TARGET_CHAIN_ID = 8453; // Base Mainnet
+  const FIXED_ETH_PRICE = 3900; // USD per ETH
+  const FIXED_PLATFORM_FEE_USD = 3; // 3 USD per NFT
+  const FIXED_PLATFORM_FEE_ETH = (FIXED_PLATFORM_FEE_USD / FIXED_ETH_PRICE).toFixed(6); // 0.00075 ETH per NFT
 </script>
 
   <!-- MAIN SCRIPT -->
@@ -187,6 +190,3 @@
   </script>
 </body>
 </html>
-
-
-
