@@ -1,4 +1,4 @@
-const CONTRACT_ADDRESS = "0xA4907928406822039c52ea5Cb290E855575ED6d3"; 
+const CONTRACT_ADDRESS = "0xd9145CCE52D386f254917e481eB44e9943F39138"; 
 const ABI =[
 	{
 		"inputs": [
@@ -1065,8 +1065,8 @@ function initWeb3Modal() {
             package: window.WalletConnectProvider?.default || window.WalletConnectProvider,
             options: {
                 rpc: {
-                    1: NETWORKS[1].rpc,
-                    11155111: NETWORKS[11155111].rpc
+                    84531: NETWORKS[84531].rpc, // Base Sepolia
+                    8453: NETWORKS[8453].rpc    // Base Mainnet
                 },
                 qrcode: true,
                 bridge: "https://bridge.walletconnect.org"
@@ -1076,7 +1076,6 @@ function initWeb3Modal() {
             package: window.CoinbaseWalletSDK,
             options: {
                 appName: "ETHERLEGIONS",
-                infuraId: INFURA_ID,
                 rpc: NETWORKS[TARGET_CHAIN_ID].rpc,
                 chainId: TARGET_CHAIN_ID,
                 darkMode: true
@@ -1090,6 +1089,7 @@ function initWeb3Modal() {
         theme: "dark"
     });
 }
+
 
 // ---------------------------
 // Global variables
@@ -1113,16 +1113,16 @@ async function connectWallet() {
         window.signer = signer;
 
         const network = await provider.getNetwork();
-        if (network.chainId !== TARGET_CHAIN_ID) {
-            try {
-                await instance.request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: `0x${TARGET_CHAIN_ID.toString(16)}` }]
-                });
-            } catch (switchError) {
-                console.warn("Failed to switch network. User may need to switch manually.", switchError);
-            }
-        }
+if (network.chainId !== TARGET_CHAIN_ID) {
+    try {
+        await instance.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: `0x${TARGET_CHAIN_ID.toString(16)}` }]
+        });
+    } catch (switchError) {
+        console.warn(`Switch network to ${NETWORKS[TARGET_CHAIN_ID].name} manually.`, switchError);
+    }
+}
 
         if (connectWalletBtn)
             connectWalletBtn.innerText = `Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
