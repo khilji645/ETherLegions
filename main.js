@@ -1210,15 +1210,21 @@ async function updatePrice() {
 async function addNFTtoMetaMask(tokenId, tokenURI) {
     if (!window.ethereum || !tokenId || !tokenURI) return;
     try {
-        // If tokenURI points to JSON metadata, fetch image
         let imageURI = tokenURI;
-        if (tokenURI.endsWith(".json")) {
+
+        // If tokenURI points to JSON metadata, fetch image
+        if (tokenURI.endsWith(".json") || tokenURI.includes(".json")) {
             try {
                 const response = await fetch(tokenURI);
                 const metadata = await response.json();
-                imageURI = metadata.image || tokenURI;
-                if (imageURI.startsWith("ipfs://")) {
-                    imageURI = imageURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+
+                if (metadata.image) {
+                    imageURI = metadata.image;
+
+                    // Handle IPFS links
+                    if (imageURI.startsWith("ipfs://")) {
+                        imageURI = imageURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+                    }
                 }
             } catch (err) {
                 console.warn("Failed to fetch metadata for MetaMask", tokenId, err);
@@ -1240,11 +1246,13 @@ async function addNFTtoMetaMask(tokenId, tokenURI) {
                 }
             }
         });
-        console.log(`NFT ${tokenId} added to MetaMask`);
+
+        console.log(`NFT ${tokenId} added to MetaMask with image ${imageURI}`);
     } catch (err) {
         console.warn("Failed to add NFT to MetaMask:", err);
     }
 }
+
 
 // ---------------------------
 // Mint NFTs
@@ -1303,92 +1311,55 @@ async function displayMintedNFTs() {
     try {
         const totalMintedBN = await contract.totalMinted();
         const totalMinted = Number(totalMintedBN || 0);
+
         for (let i = 0; i < totalMinted; i++) {
             try {
-                let uri;
+                let tokenURI;
                 if (typeof contract.tokenURI === "function") {
-                    uri = await contract.tokenURI(i + 1);
+                    tokenURI = await contract.tokenURI(i + 1);
                 } else if (typeof contract.tokenURIs === "function") {
-                    uri = await contract.tokenURIs(i);
+                    tokenURI = await contract.tokenURIs(i);
                 }
-                if (!uri) continue;
+                if (!tokenURI) continue;
 
-                // If tokenURI is JSON metadata, fetch it and extract image
-                if (uri.endsWith(".json")) {
+                let imageURI = tokenURI;
+
+                // If tokenURI is JSON metadata, fetch and extract image
+                if (tokenURI.endsWith(".json") || tokenURI.includes(".json")) {
                     try {
-                        const response = await fetch(uri);
+                        const response = await fetch(tokenURI);
                         const metadata = await response.json();
-                        uri = metadata.image || uri;
-                        // If IPFS link, convert to gateway URL
-                        if (uri.startsWith("ipfs://")) {
-                            uri = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+                        if (metadata.image) {
+                            imageURI = metadata.image;
+                            if (imageURI.startsWith("ipfs://")) {
+                                imageURI = imageURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+                            }
                         }
                     } catch (err) {
                         console.warn("Failed to fetch metadata for token", i + 1, err);
                     }
-                } else if (uri.startsWith("ipfs://")) {
-                    uri = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+                } else if (tokenURI.startsWith("ipfs://")) {
+                    imageURI = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
                 }
 
+                // Display NFT in grid
                 const div = document.createElement("div");
                 div.classList.add("nft-card");
-                div.innerHTML = `<img src="${uri}" alt="NFT ${i + 1}"><p>ID: ${i + 1}</p>`;
+                div.innerHTML = `<img src="${imageURI}" alt="NFT ${i + 1}" style="width:200px; height:auto;"><p>ID: ${i + 1}</p>`;
                 nftGrid.appendChild(div);
+
+                // Automatically add NFT to MetaMask
+                if (window.ethereum && window.addNFTtoMetaMask) {
+                    window.addNFTtoMetaMask(i + 1, tokenURI);
+                }
+
             } catch (e) {
-                break;
+                console.warn("Error displaying NFT", i + 1, e);
+                continue;
             }
         }
     } catch (e) {
         console.error("displayMintedNFTs error:", e);
-    }
-}
-
-// ---------------------------
-// Admin functions
-// ---------------------------
-async function pauseMint(){ if(contract){ await contract.pause(); messageEl.innerText="Mint paused ✅"; await refreshAll(); } }
-async function resumeMint(){ if(contract){ await contract.resume(); messageEl.innerText="Mint resumed ✅"; await refreshAll(); } }
-async function startWhitelist(){ if(contract){ await contract.setWhitelistSale(true); await contract.setPublicSale(false); messageEl.innerText="Whitelist sale started ✅"; await refreshAll(); } }
-async function stopWhitelist(){ if(contract){ await contract.setWhitelistSale(false); messageEl.innerText="Whitelist sale stopped 🛑"; await refreshAll(); } }
-async function startPublic(){ if(contract){ await contract.setPublicSale(true); await contract.setWhitelistSale(false); messageEl.innerText="Public sale started ✅"; await refreshAll(); } }
-async function stopPublic(){ if(contract){ await contract.setPublicSale(false); messageEl.innerText="Public sale stopped 🛑"; await refreshAll(); } }
-
-async function addWhitelist() {
-    if(userAddress !== PLATFORM_WALLET) return;
-    if(!whitelistAddressInput || !contract) return;
-    const addresses = whitelistAddressInput.value.split(",").map(a=>a.trim()).filter(a=>a);
-    if(addresses.length===0){ messageEl.innerText="No addresses provided"; return; }
-    await contract.addWhitelist(addresses);
-    whitelistAddressInput.value="";
-    messageEl.innerText="Added to whitelist ✅";
-    await refreshAll();
-}
-
-async function removeWhitelist() {
-    if(userAddress !== PLATFORM_WALLET) return;
-    if(!whitelistAddressInput || !contract) return;
-    const addresses = whitelistAddressInput.value.split(",").map(a=>a.trim()).filter(a=>a);
-    if(addresses.length===0){ messageEl.innerText="No addresses provided"; return; }
-    await contract.removeWhitelist(addresses);
-    whitelistAddressInput.value="";
-    messageEl.innerText="Removed from whitelist ✅";
-    await refreshAll();
-}
-
-async function withdrawFunds() {
-    if(userAddress !== PLATFORM_WALLET) return;
-    if(!contract) return;
-    try {
-        const balance = await provider.getBalance(CONTRACT_ADDRESS);
-        if(Number(balance)<=0){ messageEl.innerText="No funds to withdraw ❌"; return; }
-        const tx = await contract.withdrawFunds();
-        messageEl.innerText="Withdrawal sent... awaiting confirmation ⏳";
-        await tx.wait();
-        messageEl.innerText="Platform fees withdrawn ✅";
-        await refreshAll();
-    } catch(err){
-        console.error("withdrawFunds error:", err);
-        messageEl.innerText="Withdrawal failed: "+(err.reason||err.message||err);
     }
 }
 
