@@ -133,60 +133,17 @@
   </div>
 
   <!-- CONFIG VARIABLES -->
-<script>
-  const INFURA_ID = "a70fd3de0ceb40ff848b3a20bc1df402";
-  const PLATFORM_WALLET = "0xa082e12865d934f77de1a44a72413bd4bbb51adb".toLowerCase();
-  const NETWORKS = {
-    84531: { name: "Base Sepolia Testnet", chainId: 84531, rpc: `https://sepolia.base.org` },
-    8453: { name: "Base Mainnet", chainId: 8453, rpc: `https://mainnet.base.org` }
-  };
-  const TARGET_CHAIN_ID = 8453; // Base Mainnet
-  const FIXED_ETH_PRICE = 3900; // USD per ETH
-  const FIXED_PLATFORM_FEE_USD = 3; // 3 USD per NFT
-  const FIXED_PLATFORM_FEE_ETH = (FIXED_PLATFORM_FEE_USD / FIXED_ETH_PRICE).toFixed(6); // 0.00075 ETH per NFT
-</script>
+  <script>
+    const INFURA_ID = "a70fd3de0ceb40ff848b3a20bc1df402";
+    const PLATFORM_WALLET = "0xa082e12865d934f77de1a44a72413bd4bbb51adb".toLowerCase();
+    const NETWORKS = {
+      84531: { name: "Base Sepolia Testnet", chainId: 84531, rpc: `https://sepolia.base.org` },
+      8453: { name: "Base Mainnet", chainId: 8453, rpc: `https://mainnet.base.org` }
+    };
+    const TARGET_CHAIN_ID = 8453; // Base Mainnet
+  </script>
 
   <!-- MAIN SCRIPT -->
-  <script src="main.js"></script>
-
-  <!-- INITIALIZATION -->
-  <script>
-    const connectWalletBtn = document.getElementById("connectWallet");
-    const adminPanel = document.getElementById("adminPanel");
-    const whitelistPanel = document.getElementById("whitelistPanel");
-    const withdrawPanel = document.getElementById("withdrawPanel");
-    const messageEl = document.getElementById("message");
-    const mintBtn = document.getElementById("mintBtn");
-
-    initWeb3Modal();
-
-    connectWalletBtn.addEventListener("click", () => {
-      connectWallet();
-    });
-
-    if (web3Modal?.cachedProvider) {
-      connectWallet();
-    }
-
-    mintBtn.addEventListener("click", async () => {
-      const mintAmountInput = document.getElementById("mintAmount");
-      const amount = parseInt(mintAmountInput.value);
-      if (!amount || amount <= 0) {
-        messageEl.innerText = "Enter a valid number of NFTs";
-        return;
-      }
-      if (amount > 20) {
-        messageEl.innerText = "You can mint a maximum of 20 NFTs at a time.";
-        return;
-      }
-      const captchaResponse = grecaptcha.getResponse();
-      if (!captchaResponse) {
-        messageEl.innerText = "Please complete the CAPTCHA verification.";
-        return;
-      }
-      mintNFTs();
-      grecaptcha.reset();
-    });
-  </script>
+  <script src="main.js" defer></script>
 </body>
 </html>
