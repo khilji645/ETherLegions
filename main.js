@@ -1,4 +1,4 @@
-const CONTRACT_ADDRESS = "0xEF88EaC24AF8be5fd24Fb24296a16daCf2B208eB"; 
+const CONTRACT_ADDRESS = "0xf438A50B25Bf8940bA5FCe3b31da1C2823Ec45fE"; 
 const ABI =[
 	{
 		"inputs": [
@@ -1020,7 +1020,6 @@ const ABI =[
 	}
 ]
 
-
 let ethPriceUSD = 3900;
 let FALLBACK_TOTAL_SUPPLY = 2221;
 const MAX_MINT_PER_USER = 20; // Max per user
@@ -1473,6 +1472,7 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // On load
 // ---------------------------
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
 
 
 
