@@ -1375,59 +1375,54 @@ async function withdrawFunds() {
 
 // ---------------------------
 // Show whitelist (Updated for display under checker)
+// ---------------------------
+// Show whitelist from contract
 async function showWhitelist() {
-    if(!contract) return;
-    if(!whitelistDisplaySection) return;
+    const whitelistList = document.getElementById("whitelistList");
+    if(!whitelistList) return;
+    whitelistList.innerHTML = "";
 
-    // Remove old list if exists
-    let container = document.getElementById("whitelistFullList");
-    if(container) container.remove();
-
-    // Create container
-    container = document.createElement("div");
-    container.id = "whitelistFullList";
-    container.style.maxHeight = "200px";
-    container.style.overflowY = "auto";
-    container.style.marginTop = "10px";
-    container.style.border = "1px solid #ccc";
-    container.style.padding = "8px";
-    container.style.borderRadius = "6px";
-    container.style.backgroundColor = "#f9f9f9";
-
-    let addresses = [];
-    try{
-        if(typeof contract.whitelistAddresses==="function"){
-            let idx=0;
-            while(true){
-                try{
-                    const addr = await contract.whitelistAddresses(idx);
-                    if(!addr || addr==="0x0000000000000000000000000000000000000000") break;
-                    addresses.push(addr);
-                    idx++;
-                }catch(e){ break; }
-            }
-        }
-    }catch(e){ console.error("showWhitelist error:",e); }
-
-    if(addresses.length===0){
-        container.innerText = "No whitelisted addresses yet.";
-    } else {
-        addresses.forEach(addr=>{
-            const p = document.createElement("p");
-            p.innerText = addr;
-            p.style.cursor = "pointer";
-            p.style.margin = "2px 0";
-            p.title = "Click to copy";
-            p.addEventListener("click", ()=>{ 
-                navigator.clipboard.writeText(addr);
-                messageEl.innerText = `Address copied: ${addr}`;
-            });
-            container.appendChild(p);
-        });
+    if(!contract) {
+        const li = document.createElement("li");
+        li.innerText = "Contract not connected.";
+        whitelistList.appendChild(li);
+        return;
     }
 
-    whitelistDisplaySection.appendChild(container);
+    const addresses = [];
+    try {
+        // If contract exposes a public array whitelistAddresses(uint256)
+        let idx = 0;
+        while(true) {
+            try {
+                const addr = await contract.whitelistAddresses(idx);
+                if(!addr || addr === "0x0000000000000000000000000000000000000000") break;
+                addresses.push(addr);
+                idx++;
+                // Safety: break after 5000 addresses to avoid infinite loops
+                if(idx > 5000) break;
+            } catch(e) {
+                break;
+            }
+        }
+    } catch(e) {
+        console.error("showWhitelist error:", e);
+    }
+
+    if(addresses.length === 0){
+        const li = document.createElement("li");
+        li.innerText = "No whitelisted addresses yet.";
+        whitelistList.appendChild(li);
+        return;
+    }
+
+    for(const a of addresses){
+        const li = document.createElement("li");
+        li.innerText = a;
+        whitelistList.appendChild(li);
+    }
 }
+
 
 // ---------------------------
 // Check if address is whitelisted
