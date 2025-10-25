@@ -1210,14 +1210,6 @@ async function mintNFTs() {
     }
 }
 
-
-
-// Event listeners
-
-
-
-
-
 // ---------------------------
 // Display NFTs
 // ---------------------------
@@ -1397,12 +1389,3 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // On load
 // ---------------------------
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
-
-
-
-
-
-
-
-
-
