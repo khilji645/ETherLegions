@@ -1027,7 +1027,7 @@ const startPublicBtn = document.getElementById("startPublicBtn");
 const stopPublicBtn = document.getElementById("stopPublicBtn");
 const addWhitelistBtn = document.getElementById("addWhitelistBtn");
 const removeWhitelistBtn = document.getElementById("removeWhitelistBtn");
-const addAllWhitelistBtn = document.getElementById("addAllWhitelistBtn"); // new button
+const addAllWhitelistBtn = document.getElementById("addAllWhitelistBtn"); 
 const withdrawBtn = document.getElementById("withdrawBtn");
 const whitelistAddressInput = document.getElementById("whitelistAddress");
 
@@ -1310,28 +1310,22 @@ async function addWhitelist(autoAddresses=null) {
         chunks.push(addresses.slice(i,i+chunkSize));
     }
 
-    // Auto/manual upload
-    if(chunks.length===1){
-        // Single chunk (manual)
-        await contract.addWhitelist(chunks[0]);
-        if(whitelistAddressInput) whitelistAddressInput.value="";
-        messageEl.innerText="Added to whitelist ✅";
-    } else {
-        // Multiple chunks
-        messageEl.innerText = `Uploading ${addresses.length} addresses in ${chunks.length} chunks...`;
-        for(let i=0;i<chunks.length;i++){
-            try{
-                await contract.addWhitelist(chunks[i]);
-                messageEl.innerText = `Chunk ${i+1}/${chunks.length} uploaded ✅`;
-            }catch(err){
-                console.error("Chunk upload failed:", err);
-                messageEl.innerText = `Error uploading chunk ${i+1}: ${err.reason||err.message}`;
-            }
+    messageEl.innerText = `Uploading ${addresses.length} addresses in ${chunks.length} chunks...`;
+
+    for(let i=0;i<chunks.length;i++){
+        try{
+            await contract.addWhitelist(chunks[i]);
+            messageEl.innerText = `Chunk ${i+1}/${chunks.length} uploaded ✅`;
+            // small delay to avoid browser/wallet overload
+            await new Promise(r => setTimeout(r, 500));
+        }catch(err){
+            console.error("Chunk upload failed:", err);
+            messageEl.innerText = `Error uploading chunk ${i+1}: ${err.reason||err.message}`;
         }
-        if(whitelistAddressInput) whitelistAddressInput.value="";
-        messageEl.innerText += " All chunks processed.";
     }
 
+    if(whitelistAddressInput) whitelistAddressInput.value="";
+    messageEl.innerText += " All chunks processed.";
     await refreshAll();
 }
 
@@ -1473,5 +1467,6 @@ setInterval(()=>{ if(contract) refreshAll(); }, 20000);
 // ---------------------------
 // On load
 window.onload = ()=>{ initWeb3Modal(); updatePrice(); }
+
 
 
